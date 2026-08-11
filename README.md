@@ -71,22 +71,41 @@ flowchart TB
 
 ### Local Development
 
+**Windows (PowerShell)** — run from the `web-scraper` folder, not the parent workspace:
+
+```powershell
+cd web-scraper
+.\start.ps1
+```
+
+Or manually:
+
+```powershell
+cd web-scraper
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+**Linux / macOS:**
+
 ```bash
 git clone https://github.com/D1bakar/web-scraper.git
 cd web-scraper
 
 python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
-# Windows:     .venv\Scripts\activate
+source .venv/bin/activate
 
 pip install -r requirements.txt
 cp .env.example .env
 
-# Start the server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Open **http://localhost:8000** for the dashboard, or **http://localhost:8000/api/docs** for API documentation.
+Open **http://127.0.0.1:8000** for the dashboard, or **http://127.0.0.1:8000/api/docs** for API documentation.
+
+> **Note:** `uvicorn` must be run via the virtual environment (`python -m uvicorn` or after activating `.venv`). Running `pip install` or `uvicorn` from the parent `v2/` folder will fail because `requirements.txt` lives inside `web-scraper/`.
 
 ### CLI (Optional)
 
