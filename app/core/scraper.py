@@ -71,7 +71,11 @@ class AsyncWebScraper:
         if self.check_robots:
             allowed = await self._robots.is_allowed(url)
             if not allowed:
-                raise ScraperError(f"Blocked by robots.txt: {url}")
+                raise ScraperError(
+                    "ROBOTS_BLOCKED: This site's robots.txt disallows automated scraping. "
+                    "Try the Quotes demo mode, use https://quotes.toscrape.com, or disable "
+                    "'Check robots.txt' in Settings and retry."
+                )
 
         last_error: Exception | None = None
         owns_client = client is None
@@ -99,6 +103,12 @@ class AsyncWebScraper:
             if owns_client and client is not None:
                 await client.aclose()
 
+        err_msg = str(last_error)
+        if "403" in err_msg:
+            raise ScraperError(
+                "ACCESS_DENIED: This site blocked the request (HTTP 403). "
+                "The server may forbid scrapers. Try Quotes demo or a scraper-friendly site."
+            ) from last_error
         raise ScraperError(f"Failed to fetch {url} after {self.retries} attempts: {last_error}") from last_error
 
     async def scrape_quotes(

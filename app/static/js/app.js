@@ -3,11 +3,64 @@
 
   const API = '/api';
   let currentJobId = null;
+  let currentJobMode = 'quotes';
   let pollTimer = null;
   let resultsData = [];
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
+
+  const MODE_CONFIG = {
+    quotes: {
+      description:
+        'Extracts quote text, author names, and tags from quotes.toscrape.com. No URL needed — great first demo.',
+      example: null,
+      placeholder: '',
+      recommended: true,
+      summary: (n) => `Showing ${n} quote${n !== 1 ? 's' : ''} with text, author, and tags`,
+      columns: { text: 'Quote', author: 'Author', tags: 'Tags', source_url: 'Source Page' },
+      emptyHint: 'No quotes found. The demo site may be unreachable — check your connection.',
+    },
+    meta: {
+      description:
+        'Extracts page title, meta description, and H1–H3 headings from a single URL. One summary card, not a list of links.',
+      example: 'https://quotes.toscrape.com',
+      placeholder: 'https://quotes.toscrape.com',
+      summary: () => 'Showing page metadata — title, description, and headings',
+      emptyHint: 'No metadata could be extracted. Check the URL and try again.',
+    },
+    links: {
+      description:
+        'Extracts hyperlinks (URLs + link text) found on a page. Results are a list of links — not article text, prices, or full page content.',
+      example: 'https://quotes.toscrape.com',
+      placeholder: 'https://quotes.toscrape.com',
+      summary: (n) =>
+        `Showing ${n} link${n !== 1 ? 's' : ''} extracted from the page (URL + link text only)`,
+      columns: { url: 'Link URL', text: 'Link Text' },
+      emptyHint:
+        'No links found. Try unchecking "Same domain only" or use a page with more navigation links.',
+      linksMode: true,
+    },
+    tables: {
+      description:
+        'Extracts structured data from HTML tables — rows and columns as spreadsheet-style records.',
+      example: 'https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)',
+      placeholder: 'https://example.com/page-with-tables',
+      summary: (n) => `Showing ${n} table row${n !== 1 ? 's' : ''} extracted from HTML tables`,
+      columns: { table: 'Table #' },
+      emptyHint: 'No HTML tables found on this page. Try a URL that contains <table> elements.',
+    },
+    selectors: {
+      description:
+        'Extracts content matching your CSS selectors — text and HTML snippets for each match.',
+      example: 'https://quotes.toscrape.com',
+      placeholder: 'https://quotes.toscrape.com',
+      exampleSelectors: 'div.quote span.text\nsmall.author',
+      summary: (n) => `Showing ${n} element${n !== 1 ? 's' : ''} matched by your CSS selectors`,
+      columns: { selector: 'Selector', match: 'Match #', text: 'Text', html: 'HTML snippet' },
+      emptyHint: 'No elements matched your selectors. Check spelling and try simpler selectors like h1 or .class.',
+    },
+  };
 
   // --- Settings (localStorage) ---
   const SETTINGS_KEY = 'scraper_settings';
@@ -40,7 +93,22 @@
     $('#setting-robots').checked = s.check_robots;
   }
 
-  // --- Toast ---
+  function formatJobError(error) {
+    if (!error) return 'Job failed';
+    if (error.includes('ROBOTS_BLOCKED') || error.toLowerCase().includes('robots.txt')) {
+      return 'Blocked by robots.txt. Try Quotes demo or turn off "Check robots.txt" in Settings.';
+    }
+    if (error.includes('ACCESS_DENIED') || error.includes('403')) {
+      return 'Site blocked access (403). Try Quotes demo or https://quotes.toscrape.com';
+    }
+    return error.replace(/^(ROBOTS_BLOCKED|ACCESS_DENIED):\s*/, '');
+  }
+
+  function showRobotsHint() {
+    const hint = $('#robots-hint');
+    if (hint) hint.classList.remove('hidden');
+  }
+
   function toast(message, type = 'info') {
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
@@ -64,10 +132,13 @@
   // --- Mode toggles ---
   function updateModeUI() {
     const mode = $('#mode').value;
+    const cfg = MODE_CONFIG[mode];
     const urlGroup = $('#url-group');
     const selectorsGroup = $('#selectors-group');
     const pagesGroup = $('#pages-group');
     const domainGroup = $('#domain-group');
+    const tryExampleBtn = $('#try-example-btn');
+    const modeDesc = $('#mode-description');
 
     urlGroup.classList.toggle('hidden', mode === 'quotes');
     selectorsGroup.classList.toggle('hidden', mode !== 'selectors');
@@ -78,11 +149,36 @@
       $('#url').removeAttribute('required');
     } else {
       $('#url').setAttribute('required', '');
+      $('#url').placeholder = cfg.placeholder || 'https://example.com';
     }
+
+    if (cfg.example) {
+      tryExampleBtn.classList.remove('hidden');
+    } else {
+      tryExampleBtn.classList.add('hidden');
+    }
+
+    let descHtml = cfg.description;
+    if (cfg.recommended) {
+      descHtml += ' <span class="mode-badge">Recommended for first-time users</span>';
+    }
+    modeDesc.innerHTML = descHtml;
   }
 
   $('#mode').addEventListener('change', updateModeUI);
   updateModeUI();
+
+  $('#try-example-btn').addEventListener('click', () => {
+    const mode = $('#mode').value;
+    const cfg = MODE_CONFIG[mode];
+    if (cfg.example) {
+      $('#url').value = cfg.example;
+      toast('Example URL filled in', 'info');
+    }
+    if (cfg.exampleSelectors) {
+      $('#selectors').value = cfg.exampleSelectors;
+    }
+  });
 
   // --- Health check ---
   async function checkHealth() {
@@ -149,6 +245,7 @@
       }
       const data = await res.json();
       currentJobId = data.job_id;
+      currentJobMode = mode;
       toast('Job queued successfully', 'success');
       startPolling(currentJobId);
     } catch (err) {
@@ -176,12 +273,15 @@
       if (job.status === 'completed') {
         clearInterval(pollTimer);
         pollTimer = null;
+        currentJobMode = job.mode;
         await loadResults(jobId);
         toast(`Scrape complete — ${job.total_items} items`, 'success');
       } else if (job.status === 'failed') {
         clearInterval(pollTimer);
         pollTimer = null;
-        toast(job.error || 'Job failed', 'error');
+        const msg = formatJobError(job.error);
+        toast(msg, 'error');
+        if (job.error && job.error.includes('ROBOTS_BLOCKED')) showRobotsHint();
       }
     } catch (err) {
       console.error('Poll error:', err);
@@ -219,7 +319,8 @@
           <span class="status-label">Items</span>
           <span class="status-value">${job.total_items}</span>
         </div>
-        ${job.error ? `<div class="status-row"><span class="status-label">Error</span><span class="status-value status-failed">${job.error}</span></div>` : ''}
+        ${job.error ? `<div class="status-row"><span class="status-label">Error</span><span class="status-value status-failed">${escapeHtml(formatJobError(job.error))}</span></div>` : ''}
+        ${job.error && job.error.includes('ROBOTS_BLOCKED') ? `<div class="robots-help">Tip: Open <strong>Settings</strong> and uncheck "Check robots.txt", or use <strong>Quotes Demo</strong> mode.</div>` : ''}
         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
       </div>
     `;
@@ -229,28 +330,142 @@
   async function loadResults(jobId) {
     const res = await fetch(`${API}/jobs/${jobId}/results`);
     const data = await res.json();
-    resultsData = normalizeResults(data.data);
-    renderResultsTable(resultsData);
+    resultsData = normalizeResults(data.data, currentJobMode);
+    renderResults(resultsData, currentJobMode);
     $('#results-section').classList.remove('hidden');
     currentJobId = jobId;
   }
 
-  function normalizeResults(data) {
-    if (Array.isArray(data)) return data;
+  function normalizeResults(data, mode) {
+    if (mode === 'meta' && typeof data === 'object' && data !== null && !Array.isArray(data)) {
+      return [data];
+    }
+    if (Array.isArray(data)) {
+      return flattenForDisplay(mode, data);
+    }
     if (typeof data === 'object' && data !== null) return [data];
     return [{ value: data }];
   }
 
-  function renderResultsTable(rows) {
-    const thead = $('#results-table thead');
-    const tbody = $('#results-table tbody');
+  function flattenForDisplay(mode, data) {
+    if (mode === 'tables') {
+      const flat = [];
+      data.forEach((t) => {
+        (t.rows || []).forEach((row) => {
+          flat.push({ table: (t.table_index ?? 0) + 1, ...row });
+        });
+      });
+      return flat;
+    }
+    if (mode === 'selectors') {
+      const flat = [];
+      data.forEach((group) => {
+        (group.items || []).forEach((item, i) => {
+          flat.push({
+            selector: group.selector,
+            match: i + 1,
+            text: item.text,
+            html: item.html,
+          });
+        });
+      });
+      return flat;
+    }
+    return data;
+  }
+
+  function getColumnLabel(mode, key) {
+    const cfg = MODE_CONFIG[mode];
+    if (cfg && cfg.columns && cfg.columns[key]) return cfg.columns[key];
+    return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  function renderResultsSummary(mode, count) {
+    const el = $('#results-summary');
+    const cfg = MODE_CONFIG[mode] || {};
+    el.textContent = cfg.summary ? cfg.summary(count) : `Showing ${count} result${count !== 1 ? 's' : ''}`;
+    el.classList.remove('hidden');
+    el.classList.toggle('links-mode', !!cfg.linksMode);
+  }
+
+  function renderEmptyState(mode) {
+    const cfg = MODE_CONFIG[mode] || {};
+    const emptyEl = $('#results-empty');
+    const tableWrap = $('#results-table-wrap');
+    const metaEl = $('#results-meta');
+
+    emptyEl.classList.remove('hidden');
+    tableWrap.classList.add('hidden');
+    metaEl.classList.add('hidden');
+    emptyEl.innerHTML = `
+      <div class="results-empty-icon">📭</div>
+      <p><strong>No results</strong></p>
+      <p>${escapeHtml(cfg.emptyHint || 'Try a different URL or scrape mode.')}</p>
+    `;
+    $('#results-count').textContent = '0 items';
+    $('#results-table thead').innerHTML = '';
+    $('#results-table tbody').innerHTML = '';
+  }
+
+  function renderMetaCard(meta) {
+    const metaEl = $('#results-meta');
+    const tableWrap = $('#results-table-wrap');
+    const emptyEl = $('#results-empty');
+
+    emptyEl.classList.add('hidden');
+    tableWrap.classList.add('hidden');
+    metaEl.classList.remove('hidden');
+
+    const headings = Array.isArray(meta.headings) ? meta.headings : [];
+    const headingsHtml = headings.length
+      ? `<ul class="meta-headings-list">${headings.map((h) => `<li>${escapeHtml(h)}</li>`).join('')}</ul>`
+      : '<span class="meta-card-value">No headings found</span>';
+
+    metaEl.innerHTML = `
+      <div class="meta-card-item">
+        <div class="meta-card-label">Title</div>
+        <div class="meta-card-value">${escapeHtml(meta.title || '—')}</div>
+      </div>
+      <div class="meta-card-item">
+        <div class="meta-card-label">Page URL</div>
+        <div class="meta-card-value"><a href="${escapeHtml(meta.url || '')}" target="_blank" rel="noopener">${escapeHtml(meta.url || '—')}</a></div>
+      </div>
+      <div class="meta-card-item">
+        <div class="meta-card-label">Description</div>
+        <div class="meta-card-value">${escapeHtml(meta.description || 'No meta description found')}</div>
+      </div>
+      <div class="meta-card-item">
+        <div class="meta-card-label">Headings (H1–H3)</div>
+        ${headingsHtml}
+      </div>
+    `;
+
+    $('#results-count').textContent = `${headings.length} heading${headings.length !== 1 ? 's' : ''}`;
+  }
+
+  function renderResults(rows, mode) {
+    renderResultsSummary(mode, rows.length);
 
     if (!rows.length) {
-      thead.innerHTML = '';
-      tbody.innerHTML = '<tr><td>No results</td></tr>';
-      $('#results-count').textContent = '0 items';
+      renderEmptyState(mode);
       return;
     }
+
+    $('#results-empty').classList.add('hidden');
+
+    if (mode === 'meta') {
+      renderMetaCard(rows[0]);
+      return;
+    }
+
+    $('#results-meta').classList.add('hidden');
+    $('#results-table-wrap').classList.remove('hidden');
+    renderResultsTable(rows, mode);
+  }
+
+  function renderResultsTable(rows, mode) {
+    const thead = $('#results-table thead');
+    const tbody = $('#results-table tbody');
 
     const keys = [];
     rows.forEach((row) => {
@@ -259,10 +474,21 @@
       });
     });
 
-    thead.innerHTML = `<tr>${keys.map((k) => `<th>${k}</th>`).join('')}</tr>`;
-    tbody.innerHTML = rows.map((row) =>
-      `<tr>${keys.map((k) => `<td title="${escapeHtml(String(flatten(row[k])))}">${escapeHtml(String(flatten(row[k])))}</td>`).join('')}</tr>`
-    ).join('');
+    thead.innerHTML = `<tr>${keys.map((k) => `<th>${escapeHtml(getColumnLabel(mode, k))}</th>`).join('')}</tr>`;
+    tbody.innerHTML = rows
+      .map(
+        (row) =>
+          `<tr>${keys
+            .map((k) => {
+              const val = flatten(row[k]);
+              if (mode === 'links' && k === 'url' && val) {
+                return `<td class="link-url" title="${escapeHtml(val)}"><a href="${escapeHtml(val)}" target="_blank" rel="noopener">${escapeHtml(val)}</a></td>`;
+              }
+              return `<td title="${escapeHtml(String(val))}">${escapeHtml(String(val))}</td>`;
+            })
+            .join('')}</tr>`
+      )
+      .join('');
 
     $('#results-count').textContent = `${rows.length} item${rows.length !== 1 ? 's' : ''}`;
   }
@@ -274,19 +500,29 @@
   }
 
   function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   $('#results-search').addEventListener('input', (e) => {
     const q = e.target.value.toLowerCase();
     if (!q) {
-      renderResultsTable(resultsData);
+      renderResults(resultsData, currentJobMode);
       return;
     }
-    const filtered = resultsData.filter((row) =>
-      JSON.stringify(row).toLowerCase().includes(q)
-    );
-    renderResultsTable(filtered);
+    const filtered = resultsData.filter((row) => JSON.stringify(row).toLowerCase().includes(q));
+    if (currentJobMode === 'meta') {
+      renderResults(filtered.length ? filtered : resultsData, currentJobMode);
+      return;
+    }
+    renderResultsSummary(currentJobMode, filtered.length);
+    $('#results-empty').classList.add('hidden');
+    $('#results-meta').classList.add('hidden');
+    $('#results-table-wrap').classList.remove('hidden');
+    renderResultsTable(filtered, currentJobMode);
   });
 
   $$('[data-export]').forEach((btn) => {
@@ -304,11 +540,14 @@
       const tbody = $('#history-table tbody');
 
       if (!data.jobs.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No jobs yet</td></tr>';
+        tbody.innerHTML =
+          '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No jobs yet</td></tr>';
         return;
       }
 
-      tbody.innerHTML = data.jobs.map((job) => `
+      tbody.innerHTML = data.jobs
+        .map(
+          (job) => `
         <tr>
           <td class="job-id">${job.id.slice(0, 8)}...</td>
           <td>${job.mode}</td>
@@ -317,10 +556,12 @@
           <td>${job.total_items}</td>
           <td>${formatDate(job.created_at)}</td>
           <td>
-            ${job.status === 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')">View</button>` : '—'}
+            ${job.status === 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')">View</button>` : job.status === 'failed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')" title="${escapeHtml(formatJobError(job.error || ''))}">Details</button>` : '—'}
           </td>
         </tr>
-      `).join('');
+      `
+        )
+        .join('');
     } catch {
       toast('Failed to load history', 'error');
     }
@@ -342,6 +583,7 @@
     currentJobId = jobId;
     const res = await fetch(`${API}/jobs/${jobId}`);
     const job = await res.json();
+    currentJobMode = job.mode;
     renderLiveStatus(job);
     if (job.status === 'completed') await loadResults(jobId);
   };
@@ -371,7 +613,9 @@
       if (!$('#setting-user-agent').value) {
         $('#setting-user-agent').value = serverSettings.default_user_agent;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   init();

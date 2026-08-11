@@ -44,17 +44,25 @@
               <div class="form-group">
                 <label for="mode">Scrape Mode</label>
                 <select id="mode" name="mode" required>
-                  <option value="quotes">Quotes Demo (quotes.toscrape.com)</option>
+                  <option value="quotes">Quotes Demo — recommended start</option>
                   <option value="meta">Page Metadata</option>
                   <option value="links">Link Extraction</option>
                   <option value="tables">Table Extraction</option>
                   <option value="selectors">Custom CSS Selectors</option>
                 </select>
+                <p id="mode-description" class="mode-description"></p>
               </div>
 
               <div class="form-group" id="url-group">
                 <label for="url">Target URL</label>
-                <input type="url" id="url" name="url" placeholder="https://example.com">
+                <div class="url-row">
+                  <input type="url" id="url" name="url" placeholder="https://example.com">
+                  <button type="button" id="try-example-btn" class="btn btn-ghost btn-sm try-example-btn hidden">Try example</button>
+                </div>
+                <p id="robots-hint" class="form-hint hidden">
+                  Some sites (e.g. ChatGPT, Google) block scraping via robots.txt.
+                  Use <strong>Quotes Demo</strong> or disable robots check in Settings.
+                </p>
               </div>
 
               <div class="form-group hidden" id="selectors-group">
@@ -95,6 +103,7 @@
         </div>
 
         <div class="card glass results-card hidden" id="results-section">
+          <div id="results-summary" class="results-summary hidden"></div>
           <div class="results-header">
             <h3 class="card-title">Results</h3>
             <div class="results-actions">
@@ -106,7 +115,9 @@
               </div>
             </div>
           </div>
-          <div class="table-wrap">
+          <div id="results-empty" class="results-empty hidden"></div>
+          <div id="results-meta" class="results-meta hidden"></div>
+          <div class="table-wrap" id="results-table-wrap">
             <table id="results-table">
               <thead></thead>
               <tbody></tbody>
