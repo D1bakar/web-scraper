@@ -16,6 +16,19 @@ from app.core.robots import RobotsChecker
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_PRICE_SELECTORS = [
+    ".price",
+    '[itemprop="price"]',
+    ".a-price .a-offscreen",
+    ".a-price-whole",
+    ".price_color",
+    "#priceblock_ourprice",
+    ".product-price",
+    "[data-price]",
+    ".sale-price",
+    ".current-price",
+]
+
 DEFAULT_HEADERS = {
     "Accept": "text/html,application/xhtml+xml",
     "Accept-Language": "en-US,en;q=0.9",
@@ -36,6 +49,17 @@ class PageMeta:
     url: str
     description: str
     headings: list[str]
+
+
+@dataclass
+class PriceCompareResult:
+    url: str
+    site_name: str
+    price_text: str | None
+    price_numeric: float | None
+    status: str
+    error: str | None
+    product_label: str | None = None
 
 
 class ScraperError(Exception):
@@ -255,5 +279,112 @@ class AsyncWebScraper:
                 "count": len(items),
                 "items": items,
             })
+
+        return results
+
+    def _site_name_from_url(self, url: str) -> str:
+        netloc = urlparse(url).netloc
+        if netloc.startswith("www."):
+            netloc = netloc[4:]
+        return netloc or url
+
+    def _build_price_selectors(self, price_selector: str | None) -> list[str]:
+        selectors: list[str] = []
+        if price_selector:
+            selectors.append(price_selector)
+        for selector in DEFAULT_PRICE_SELECTORS:
+            if selector not in selectors:
+                selectors.append(selector)
+        return selectors
+
+    def _parse_price_numeric(self, text: str) -> float | None:
+        if not text:
+            return None
+
+        cleaned = re.sub(r"[^\d.,]", "", text.strip())
+        if not cleaned:
+            return None
+
+        if "," in cleaned and "." in cleaned:
+            cleaned = cleaned.replace(",", "")
+        elif "," in cleaned:
+            parts = cleaned.split(",")
+            if len(parts[-1]) == 2:
+                cleaned = cleaned.replace(",", ".")
+            else:
+                cleaned = cleaned.replace(",", "")
+
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+
+    def _extract_price_from_soup(
+        self,
+        soup: BeautifulSoup,
+        selectors: list[str],
+    ) -> str | None:
+        for selector in selectors:
+            for element in soup.select(selector):
+                text = (
+                    element.get("content")
+                    or element.get("data-price")
+                    or element.get_text(strip=True)
+                )
+                if text and re.search(r"\d", text):
+                    return text.strip()
+        return None
+
+    async def scrape_price_compare(
+        self,
+        urls: list[str],
+        price_selector: str | None = None,
+        product_label: str | None = None,
+        progress_callback: Any | None = None,
+    ) -> list[dict[str, Any]]:
+        selectors = self._build_price_selectors(price_selector)
+        results: list[dict[str, Any]] = []
+
+        async with httpx.AsyncClient(
+            headers=self._headers,
+            timeout=self.timeout,
+            follow_redirects=True,
+        ) as client:
+            for index, url in enumerate(urls, start=1):
+                result = PriceCompareResult(
+                    url=url,
+                    site_name=self._site_name_from_url(url),
+                    price_text=None,
+                    price_numeric=None,
+                    status="error",
+                    error=None,
+                    product_label=product_label,
+                )
+
+                try:
+                    soup = await self.fetch(url, client=client)
+                    price_text = self._extract_price_from_soup(soup, selectors)
+                    if price_text:
+                        result.price_text = price_text
+                        result.price_numeric = self._parse_price_numeric(price_text)
+                        result.status = "ok"
+                    else:
+                        result.error = (
+                            "No price found. Try a different CSS selector "
+                            "(right-click the price → Inspect → copy class)."
+                        )
+                except ScraperError as exc:
+                    result.error = str(exc)
+                except Exception as exc:
+                    logger.exception("Price compare failed for %s", url)
+                    result.error = f"Unexpected error: {exc}"
+
+                results.append(asdict(result))
+
+                if progress_callback:
+                    await progress_callback(index, len(results))
+
+                if index < len(urls) and self.delay:
+                    await asyncio.sleep(self.delay)
 
         return results

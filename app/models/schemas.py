@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 class ScrapeMode(str, Enum):
+    PRICE_COMPARE = "price_compare"
     QUOTES = "quotes"
     META = "meta"
     LINKS = "links"
@@ -25,10 +26,16 @@ class JobStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+MAX_PRICE_COMPARE_URLS = 50
+
+
 class ScrapeRequest(BaseModel):
     mode: ScrapeMode
     url: HttpUrl | None = None
+    urls: list[str] = Field(default_factory=list)
     selectors: list[str] = Field(default_factory=list)
+    price_selector: str | None = None
+    product_label: str | None = None
     max_pages: int | None = Field(default=None, ge=1, le=100)
     same_domain: bool = True
     delay: float | None = Field(default=None, ge=0, le=30)
@@ -41,6 +48,22 @@ class ScrapeRequest(BaseModel):
     @classmethod
     def validate_selectors(cls, v: list[str]) -> list[str]:
         return [s.strip() for s in v if s.strip()]
+
+    @field_validator("urls")
+    @classmethod
+    def validate_urls(cls, v: list[str]) -> list[str]:
+        cleaned = [u.strip() for u in v if u.strip()]
+        if len(cleaned) > MAX_PRICE_COMPARE_URLS:
+            raise ValueError(f"Maximum {MAX_PRICE_COMPARE_URLS} URLs allowed per price compare job")
+        return cleaned
+
+    @field_validator("price_selector", "product_label")
+    @classmethod
+    def strip_optional_strings(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        stripped = v.strip()
+        return stripped or None
 
 
 class JobCreateResponse(BaseModel):

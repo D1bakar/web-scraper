@@ -42,6 +42,9 @@ class JobManager:
             "max_pages": request.max_pages,
             "same_domain": request.same_domain,
             "selectors": request.selectors,
+            "urls": request.urls,
+            "price_selector": request.price_selector,
+            "product_label": request.product_label,
             "delay": request.delay or self.settings.default_delay,
             "timeout": request.timeout or self.settings.default_timeout,
             "retries": request.retries or self.settings.default_retries,
@@ -56,7 +59,11 @@ class JobManager:
         record = JobRecord(
             id=job_id,
             mode=request.mode.value,
-            url=str(request.url) if request.url else None,
+            url=(
+                str(request.url)
+                if request.url
+                else (request.urls[0] if request.urls else None)
+            ),
             status=JobStatus.PENDING.value,
             config=config,
         )
@@ -144,8 +151,23 @@ class JobManager:
                 async def on_progress(page: int, items: int) -> None:
                     self._update_job(db, job, progress=page, total_items=items)
 
+                async def on_price_progress(completed: int, items: int) -> None:
+                    total = len(config.get("urls") or [])
+                    pct = int((completed / total) * 100) if total else 0
+                    self._update_job(db, job, progress=pct, total_items=items)
+
                 data: Any
-                if request.mode == ScrapeMode.QUOTES:
+                if request.mode == ScrapeMode.PRICE_COMPARE:
+                    urls = config.get("urls") or []
+                    if not urls:
+                        raise ScraperError("At least one URL is required for price_compare mode")
+                    data = await scraper.scrape_price_compare(
+                        urls=urls,
+                        price_selector=config.get("price_selector"),
+                        product_label=config.get("product_label"),
+                        progress_callback=on_price_progress,
+                    )
+                elif request.mode == ScrapeMode.QUOTES:
                     data = await scraper.scrape_quotes(
                         max_pages=config.get("max_pages"),
                         progress_callback=on_progress,

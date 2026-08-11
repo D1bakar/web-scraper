@@ -35,15 +35,16 @@
       <section id="view-scrape" class="view active">
         <header class="page-header">
           <h2>New Scrape Job</h2>
-          <p>Configure and launch a data extraction job</p>
+          <p id="page-subtitle">Compare prices across websites — or choose an advanced scrape mode</p>
         </header>
 
         <div class="grid-2">
           <div class="card glass">
             <form id="scrape-form">
               <div class="form-group">
-                <label for="mode">Scrape Mode</label>
+                <label for="mode">What do you want to do?</label>
                 <select id="mode" name="mode" required>
+                  <option value="price_compare">Price Compare — compare product prices</option>
                   <option value="quotes">Quotes Demo — recommended start</option>
                   <option value="meta">Page Metadata</option>
                   <option value="links">Link Extraction</option>
@@ -53,7 +54,37 @@
                 <p id="mode-description" class="mode-description"></p>
               </div>
 
-              <div class="form-group" id="url-group">
+              <div id="price-compare-panel">
+                <div class="price-compare-banner">
+                  <strong>Up to 50 URLs per run.</strong>
+                  For comparing across 1000+ sites, export results and combine in a spreadsheet — run multiple batches of 50.
+                </div>
+
+                <div class="form-group">
+                  <label for="compare-urls">Step 1 — Paste product page URLs (one per line)</label>
+                  <textarea id="compare-urls" rows="6" placeholder="https://store-a.com/iphone-16&#10;https://store-b.com/iphone-16"></textarea>
+                  <div class="form-row-inline">
+                    <button type="button" id="load-example-urls-btn" class="btn btn-ghost btn-sm">Load example</button>
+                    <span class="form-hint">Demo uses books.toscrape.com (scraper-friendly practice site).</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="price-selector">Step 2 — CSS selector for the price</label>
+                  <input type="text" id="price-selector" placeholder=".price_color">
+                  <p class="form-hint">
+                    Right-click the price on the website → <strong>Inspect</strong> → copy the CSS class
+                    (e.g. <code>.price</code>, <code>[itemprop="price"]</code>). Leave blank to try common selectors automatically.
+                  </p>
+                </div>
+
+                <div class="form-group">
+                  <label for="product-label">Optional — Product name label</label>
+                  <input type="text" id="product-label" placeholder="iPhone 16 Pro 256GB">
+                </div>
+              </div>
+
+              <div class="form-group hidden" id="url-group">
                 <label for="url">Target URL</label>
                 <div class="url-row">
                   <input type="url" id="url" name="url" placeholder="https://example.com">
@@ -84,7 +115,7 @@
               </div>
 
               <button type="submit" class="btn btn-primary" id="submit-btn">
-                <span class="btn-text">Start Scraping</span>
+                <span class="btn-text">Compare Prices</span>
                 <span class="btn-loader hidden"></span>
               </button>
             </form>

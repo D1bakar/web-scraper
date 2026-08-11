@@ -11,6 +11,32 @@
   const $$ = (sel) => document.querySelectorAll(sel);
 
   const MODE_CONFIG = {
+    price_compare: {
+      description:
+        'Compare product prices across multiple websites. Paste one product page URL per line, set a CSS selector for the price, and get a sorted comparison table.',
+      recommended: true,
+      priceCompare: true,
+      exampleUrls: [
+        'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html',
+        'https://books.toscrape.com/catalogue/tipping-the-velvet_999/index.html',
+        'https://books.toscrape.com/catalogue/soumission_998/index.html',
+        'https://books.toscrape.com/catalogue/sharp-objects_997/index.html',
+        'https://books.toscrape.com/catalogue/sapiens-our-evolution-from-robots-to-gods_314/index.html',
+      ].join('\n'),
+      examplePriceSelector: '.price_color',
+      exampleProductLabel: 'Demo book prices',
+      summary: (n) => `Compared prices across ${n} website${n !== 1 ? 's' : ''} — sorted lowest first when numeric`,
+      columns: {
+        site_name: 'Website',
+        price_text: 'Price',
+        price_numeric: 'Numeric',
+        status: 'Status',
+        url: 'Link',
+        error: 'Error',
+      },
+      emptyHint: 'No results returned. Check your URLs and CSS selector, then try again.',
+      submitLabel: 'Compare Prices',
+    },
     quotes: {
       description:
         'Extracts quote text, author names, and tags from quotes.toscrape.com. No URL needed — great first demo.',
@@ -61,6 +87,8 @@
       emptyHint: 'No elements matched your selectors. Check spelling and try simpler selectors like h1 or .class.',
     },
   };
+
+  const MAX_COMPARE_URLS = 50;
 
   // --- Settings (localStorage) ---
   const SETTINGS_KEY = 'scraper_settings';
@@ -137,32 +165,48 @@
     const selectorsGroup = $('#selectors-group');
     const pagesGroup = $('#pages-group');
     const domainGroup = $('#domain-group');
+    const priceComparePanel = $('#price-compare-panel');
     const tryExampleBtn = $('#try-example-btn');
     const modeDesc = $('#mode-description');
+    const submitText = $('.btn-text');
+    const pageSubtitle = $('#page-subtitle');
 
-    urlGroup.classList.toggle('hidden', mode === 'quotes');
+    const isPriceCompare = mode === 'price_compare';
+    priceComparePanel.classList.toggle('hidden', !isPriceCompare);
+    urlGroup.classList.toggle('hidden', mode === 'quotes' || isPriceCompare);
     selectorsGroup.classList.toggle('hidden', mode !== 'selectors');
     pagesGroup.classList.toggle('hidden', mode !== 'quotes');
     domainGroup.classList.toggle('hidden', mode !== 'links');
 
-    if (mode === 'quotes') {
+    if (pageSubtitle) {
+      pageSubtitle.textContent = isPriceCompare
+        ? 'Paste product URLs, pick a price selector, and compare — up to 50 sites per run'
+        : 'Configure and launch a data extraction job';
+    }
+
+    if (mode === 'quotes' || isPriceCompare) {
       $('#url').removeAttribute('required');
     } else {
       $('#url').setAttribute('required', '');
       $('#url').placeholder = cfg.placeholder || 'https://example.com';
     }
 
-    if (cfg.example) {
+    if (cfg.example && !isPriceCompare) {
       tryExampleBtn.classList.remove('hidden');
     } else {
       tryExampleBtn.classList.add('hidden');
     }
 
     let descHtml = cfg.description;
-    if (cfg.recommended) {
+    if (cfg.recommended && mode !== 'price_compare') {
       descHtml += ' <span class="mode-badge">Recommended for first-time users</span>';
     }
+    if (isPriceCompare) {
+      descHtml += ' <span class="mode-badge">Easiest way to compare prices</span>';
+    }
     modeDesc.innerHTML = descHtml;
+
+    submitText.textContent = cfg.submitLabel || 'Start Scraping';
   }
 
   $('#mode').addEventListener('change', updateModeUI);
@@ -178,6 +222,14 @@
     if (cfg.exampleSelectors) {
       $('#selectors').value = cfg.exampleSelectors;
     }
+  });
+
+  $('#load-example-urls-btn').addEventListener('click', () => {
+    const cfg = MODE_CONFIG.price_compare;
+    $('#compare-urls').value = cfg.exampleUrls;
+    $('#price-selector').value = cfg.examplePriceSelector;
+    $('#product-label').value = cfg.exampleProductLabel;
+    toast('Example URLs loaded — click Compare Prices to try it', 'info');
   });
 
   // --- Health check ---
@@ -221,6 +273,32 @@
 
     if (mode !== 'quotes') {
       body.url = $('#url').value;
+    }
+    if (mode === 'price_compare') {
+      const urls = $('#compare-urls').value
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!urls.length) {
+        toast('Paste at least one product page URL', 'error');
+        btn.disabled = false;
+        $('.btn-text').classList.remove('hidden');
+        $('.btn-loader').classList.add('hidden');
+        return;
+      }
+      if (urls.length > MAX_COMPARE_URLS) {
+        toast(`Maximum ${MAX_COMPARE_URLS} URLs per run. Run multiple batches for more sites.`, 'error');
+        btn.disabled = false;
+        $('.btn-text').classList.remove('hidden');
+        $('.btn-loader').classList.add('hidden');
+        return;
+      }
+      body.urls = urls;
+      const selector = $('#price-selector').value.trim();
+      if (selector) body.price_selector = selector;
+      const label = $('#product-label').value.trim();
+      if (label) body.product_label = label;
+      delete body.url;
     }
     if (mode === 'quotes') {
       const pages = $('#max-pages').value;
@@ -341,10 +419,27 @@
       return [data];
     }
     if (Array.isArray(data)) {
-      return flattenForDisplay(mode, data);
+      const rows = flattenForDisplay(mode, data);
+      if (mode === 'price_compare') {
+        return sortPriceCompareResults(rows);
+      }
+      return rows;
     }
     if (typeof data === 'object' && data !== null) return [data];
     return [{ value: data }];
+  }
+
+  function sortPriceCompareResults(rows) {
+    return [...rows].sort((a, b) => {
+      const aNum = a.price_numeric;
+      const bNum = b.price_numeric;
+      if (aNum != null && bNum != null) return aNum - bNum;
+      if (aNum != null) return -1;
+      if (bNum != null) return 1;
+      if (a.status === 'ok' && b.status !== 'ok') return -1;
+      if (b.status === 'ok' && a.status !== 'ok') return 1;
+      return (a.site_name || '').localeCompare(b.site_name || '');
+    });
   }
 
   function flattenForDisplay(mode, data) {
@@ -466,13 +561,26 @@
   function renderResultsTable(rows, mode) {
     const thead = $('#results-table thead');
     const tbody = $('#results-table tbody');
+    const cfg = MODE_CONFIG[mode] || {};
 
-    const keys = [];
-    rows.forEach((row) => {
-      Object.keys(row).forEach((k) => {
-        if (!keys.includes(k)) keys.push(k);
+    let keys = [];
+    if (cfg.columns) {
+      keys = Object.keys(cfg.columns);
+      rows.forEach((row) => {
+        Object.keys(row).forEach((k) => {
+          if (!keys.includes(k) && k !== 'product_label') keys.push(k);
+        });
       });
-    });
+      if (mode === 'price_compare') {
+        keys = keys.filter((k) => k !== 'product_label' && k !== 'price_numeric');
+      }
+    } else {
+      rows.forEach((row) => {
+        Object.keys(row).forEach((k) => {
+          if (!keys.includes(k)) keys.push(k);
+        });
+      });
+    }
 
     thead.innerHTML = `<tr>${keys.map((k) => `<th>${escapeHtml(getColumnLabel(mode, k))}</th>`).join('')}</tr>`;
     tbody.innerHTML = rows
@@ -481,6 +589,16 @@
           `<tr>${keys
             .map((k) => {
               const val = flatten(row[k]);
+              if (mode === 'price_compare' && k === 'url' && val) {
+                return `<td class="link-url"><a href="${escapeHtml(val)}" target="_blank" rel="noopener">Open</a></td>`;
+              }
+              if (mode === 'price_compare' && k === 'status') {
+                const cls = val === 'ok' ? 'status-ok' : 'status-error';
+                return `<td class="${cls}">${escapeHtml(val === 'ok' ? 'OK' : 'Error')}</td>`;
+              }
+              if (mode === 'price_compare' && k === 'price_text' && val) {
+                return `<td class="price-cell">${escapeHtml(String(val))}</td>`;
+              }
               if (mode === 'links' && k === 'url' && val) {
                 return `<td class="link-url" title="${escapeHtml(val)}"><a href="${escapeHtml(val)}" target="_blank" rel="noopener">${escapeHtml(val)}</a></td>`;
               }
@@ -490,7 +608,7 @@
       )
       .join('');
 
-    $('#results-count').textContent = `${rows.length} item${rows.length !== 1 ? 's' : ''}`;
+    $('#results-count').textContent = `${rows.length} site${rows.length !== 1 ? 's' : ''}`;
   }
 
   function flatten(val) {

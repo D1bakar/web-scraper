@@ -14,6 +14,7 @@
 <p align="center">
   <a href="#quick-start">Quick Start</a> ·
   <a href="#api-reference">API</a> ·
+  <a href="docs/HOW_TO_COMPARE_PRICES.md">Compare Prices Guide</a> ·
   <a href="docs/WHY.md">Why Web Scraper Pro</a> ·
   <a href="/api/docs">Live API Docs</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
@@ -33,7 +34,7 @@ Web Scraper Pro transforms polite, structured web extraction into a **deployment
 |----------|------------|
 | **API** | Async FastAPI REST endpoints with OpenAPI at [`/api/docs`](#live-api-documentation) |
 | **UI** | Premium dark glass-morphism dashboard at `/` |
-| **Modes** | Quotes demo, page metadata, links, tables, custom CSS selectors |
+| **Modes** | **Price Compare**, quotes demo, page metadata, links, tables, custom CSS selectors |
 | **Jobs** | Async queue with SQLite persistence (structured for Redis/Celery scale-up) |
 | **Compliance** | Automatic robots.txt checks before every scrape |
 | **Export** | JSON, CSV, Excel (openpyxl) download endpoints |
@@ -119,6 +120,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Open **http://127.0.0.1:8000** for the dashboard, or **http://127.0.0.1:8000/api/docs** for interactive API documentation.
 
+> **Compare product prices?** See the step-by-step guide: [docs/HOW_TO_COMPARE_PRICES.md](docs/HOW_TO_COMPARE_PRICES.md)
+
 > **Note:** Run `uvicorn` from inside the virtual environment. `requirements.txt` lives in `web-scraper/`, not the parent workspace.
 
 ### Docker
@@ -198,6 +201,7 @@ curl -X POST http://localhost:8000/api/jobs \
 
 | Mode | Description | Required Fields |
 |------|-------------|-----------------|
+| `price_compare` | Compare product prices across multiple URLs (up to 50) | `urls`, optional `price_selector`, `product_label` |
 | `quotes` | Paginated quotes from quotes.toscrape.com | — |
 | `meta` | Page title, description, headings | `url` |
 | `links` | Anchor link extraction | `url` |

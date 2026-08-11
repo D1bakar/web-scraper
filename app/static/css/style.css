@@ -617,3 +617,47 @@ td.link-url a:hover { text-decoration: underline; }
   font-size: 0.82rem;
   line-height: 1.45;
 }
+
+.price-compare-banner {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.price-compare-banner strong {
+  color: var(--text-primary);
+}
+
+.form-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.form-hint code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82em;
+  color: var(--accent-hover);
+}
+
+.status-ok {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.status-error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.price-cell {
+  font-weight: 600;
+  color: var(--success);
+}

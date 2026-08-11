@@ -13,6 +13,7 @@ from app.core.jobs import job_manager
 from app.db.database import get_db
 from app.db.models import JobRecord
 from app.models.schemas import (
+    MAX_PRICE_COMPARE_URLS,
     HealthResponse,
     JobCreateResponse,
     JobListResponse,
@@ -54,6 +55,17 @@ def _validate_request(request: ScrapeRequest) -> None:
         raise HTTPException(status_code=422, detail=f"URL is required for {request.mode.value} mode")
     if request.mode == ScrapeMode.SELECTORS and not request.selectors:
         raise HTTPException(status_code=422, detail="At least one CSS selector is required")
+    if request.mode == ScrapeMode.PRICE_COMPARE:
+        if not request.urls:
+            raise HTTPException(
+                status_code=422,
+                detail="At least one URL is required for price_compare mode",
+            )
+        if len(request.urls) > MAX_PRICE_COMPARE_URLS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Maximum {MAX_PRICE_COMPARE_URLS} URLs allowed per price compare job",
+            )
 
 
 @router.get("/health", response_model=HealthResponse, tags=["System"])
