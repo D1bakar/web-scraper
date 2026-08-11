@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Scraper Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1>Web Scraper Pro</h1>
+          <p>Data Extraction Platform</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="scrape">New Scrape</button>
+        <button class="nav-item" data-view="history">Job History</button>
+        <button class="nav-item" data-view="settings">Settings</button>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/api/docs" target="_blank" rel="noopener">API Docs</a>
+        <span id="health-badge" class="badge badge-pending">Checking...</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- Scrape View -->
+      <section id="view-scrape" class="view active">
+        <header class="page-header">
+          <h2>New Scrape Job</h2>
+          <p>Configure and launch a data extraction job</p>
+        </header>
+
+        <div class="grid-2">
+          <div class="card glass">
+            <form id="scrape-form">
+              <div class="form-group">
+                <label for="mode">Scrape Mode</label>
+                <select id="mode" name="mode" required>
+                  <option value="quotes">Quotes Demo (quotes.toscrape.com)</option>
+                  <option value="meta">Page Metadata</option>
+                  <option value="links">Link Extraction</option>
+                  <option value="tables">Table Extraction</option>
+                  <option value="selectors">Custom CSS Selectors</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="url-group">
+                <label for="url">Target URL</label>
+                <input type="url" id="url" name="url" placeholder="https://example.com">
+              </div>
+
+              <div class="form-group hidden" id="selectors-group">
+                <label for="selectors">CSS Selectors (one per line)</label>
+                <textarea id="selectors" rows="3" placeholder="h1.title&#10;.content p"></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group" id="pages-group">
+                  <label for="max-pages">Max Pages</label>
+                  <input type="number" id="max-pages" name="max_pages" min="1" max="100" placeholder="All">
+                </div>
+                <div class="form-group" id="domain-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="same-domain" checked>
+                    Same domain only
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="submit-btn">
+                <span class="btn-text">Start Scraping</span>
+                <span class="btn-loader hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card glass">
+            <h3 class="card-title">Live Status</h3>
+            <div id="live-status" class="live-status empty">
+              <div class="status-placeholder">
+                <div class="status-icon">📡</div>
+                <p>No active job</p>
+                <span>Submit a scrape to see live progress</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card glass results-card hidden" id="results-section">
+          <div class="results-header">
+            <h3 class="card-title">Results</h3>
+            <div class="results-actions">
+              <input type="search" id="results-search" placeholder="Search results..." class="search-input">
+              <div class="export-btns">
+                <button class="btn btn-ghost btn-sm" data-export="json">JSON</button>
+                <button class="btn btn-ghost btn-sm" data-export="csv">CSV</button>
+                <button class="btn btn-ghost btn-sm" data-export="xlsx">Excel</button>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="results-table">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p id="results-count" class="results-count"></p>
+        </div>
+      </section>
+
+      <!-- History View -->
+      <section id="view-history" class="view">
+        <header class="page-header">
+          <h2>Job History</h2>
+          <p>Past scrape jobs and their status</p>
+        </header>
+        <div class="card glass">
+          <div class="table-wrap">
+            <table id="history-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Mode</th>
+                  <th>URL</th>
+                  <th>Status</th>
+                  <th>Items</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings View -->
+      <section id="view-settings" class="view">
+        <header class="page-header">
+          <h2>Settings</h2>
+          <p>Configure scraping defaults for new jobs</p>
+        </header>
+        <div class="card glass settings-card">
+          <form id="settings-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="setting-delay">Request Delay (seconds)</label>
+                <input type="number" id="setting-delay" min="0" max="30" step="0.1" value="1.0">
+              </div>
+              <div class="form-group">
+                <label for="setting-timeout">Timeout (seconds)</label>
+                <input type="number" id="setting-timeout" min="5" max="120" value="15">
+              </div>
+              <div class="form-group">
+                <label for="setting-retries">Retries</label>
+                <input type="number" id="setting-retries" min="1" max="10" value="3">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="setting-user-agent">User-Agent</label>
+              <input type="text" id="setting-user-agent" class="mono">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="setting-robots" checked>
+                Check robots.txt before scraping
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+            <p class="settings-note">Settings are stored locally and applied to new jobs.</p>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

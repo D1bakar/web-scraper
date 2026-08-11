@@ -5,9 +5,16 @@ __pycache__/
 venv/
 env/
 .env
+data/
 output/
+*.db
 *.csv
 *.json
+*.xlsx
 !examples/sample_output.json
 .DS_Store
 Thumbs.db
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage

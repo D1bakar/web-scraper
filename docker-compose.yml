@@ -1,0 +1,21 @@
+services:
+  web-scraper:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - scraper-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/scraper.db
+      - LOG_LEVEL=INFO
+      - CHECK_ROBOTS_TXT=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  scraper-data:
