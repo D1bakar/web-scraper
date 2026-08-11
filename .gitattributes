@@ -1,0 +1,10 @@
+# GitHub Linguist — ensure Python is detected as the primary language
+*.py              linguist-language=Python linguist-detectable=true
+
+# Deployment helper — exclude from language statistics
+deploy.ps1        linguist-vendored=true
+
+# Generated output — never count toward language stats
+output/**         linguist-vendored=true
+*.json            linguist-vendored=true
+*.csv             linguist-vendored=true
