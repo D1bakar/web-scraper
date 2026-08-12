@@ -6,6 +6,12 @@ Web Scraper Pro v2.4 is a **mobile-first progressive web app**. Same URL, same b
 
 ## Quick Start on Mobile
 
+### Easiest: one-click phone setup (Windows)
+
+Double-click **`phone-setup.bat`** — adds firewall rule, starts server, prints the URL for your phone.
+
+If that still fails (hotspot isolation or phone on mobile data), double-click **`start-tunnel.bat`** and open the public HTTPS URL on your phone. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 ### 1. Start the server (on your PC)
 
 ```powershell
@@ -87,9 +93,17 @@ Use this when your PC has no Wi-Fi router, or you want the phone and PC on a net
 
 ---
 
-## Alternative: ngrok (different networks / remote testing)
+## Alternative: ngrok / tunnel (different networks / hotspot isolation)
 
-When PC and phone are on **different networks** (e.g. PC at home, phone on mobile data away from home), use a tunnel:
+When PC and phone are on **different networks**, or your phone hotspot blocks phone→PC traffic:
+
+```cmd
+start-tunnel.bat
+```
+
+Add `NGROK_AUTHTOKEN=...` to `.env` (free at [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)).
+
+Or manually with ngrok CLI:
 
 ```powershell
 # Install ngrok, then with the server running on port 8000:
@@ -171,8 +185,9 @@ Restart the server. Mobile users sign in at `/login`.
 
 | Problem | Fix |
 |---------|-----|
-| Can't reach server from phone | Same network (Wi-Fi or hotspot)? Run `allow-phone-access.bat` as Admin? Use LAN IP, not `127.0.0.1` |
-| Phone on mobile data, PC on Wi-Fi | Won't work — use hotspot or ngrok |
+| Can't reach server from phone | Run **`phone-setup.bat`**. Same network? Use LAN IP, not `127.0.0.1`. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| Phone on mobile data, PC on Wi-Fi | Won't work over LAN — use **`start-tunnel.bat`** |
+| Hotspot won't connect phone to PC | AP isolation — use **`start-tunnel.bat`** |
 | Only `127.0.0.1` works | Server was bound to localhost — update to latest and use `start.bat` (binds `0.0.0.0`) |
 | Login loop | Clear cookies; check ADMIN_USER/PASSWORD |
 | Install banner missing | iOS requires manual Add to Home Screen |

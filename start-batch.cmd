@@ -43,7 +43,13 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr /R /C:":8000 .*LISTENING"') d
 )
 
 echo.
-"%PY%" scripts/print_access_urls.py 8000
+if /I "%~1"=="--phone-setup" (
+    "%PY%" scripts/print_access_urls.py 8000 --qr
+    echo.
+    echo   Still cannot connect? Double-click start-tunnel.bat for a public HTTPS URL.
+) else (
+    "%PY%" scripts/print_access_urls.py 8000
+)
 echo.
 echo   Press Ctrl+C to stop the server.
 echo.

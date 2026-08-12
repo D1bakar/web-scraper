@@ -66,9 +66,15 @@ try {
     }
 }
 
+$phoneSetup = $args -contains "--phone-setup"
+$urlArgs = if ($phoneSetup) { @("8000", "--qr") } else { @("8000") }
+
 Write-Host ""
-& $py scripts/print_access_urls.py 8000
+& $py scripts/print_access_urls.py @urlArgs
 Write-Host ""
+if ($phoneSetup) {
+    Write-Host "  Still cannot connect? Double-click start-tunnel.bat for a public HTTPS URL." -ForegroundColor Yellow
+}
 Write-Host "  Tip: verify version is 2.4.0 at /api/health before testing modes." -ForegroundColor DarkGray
 Write-Host "  Press Ctrl+C to stop the server." -ForegroundColor DarkGray
 Write-Host ""

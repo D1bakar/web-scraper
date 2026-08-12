@@ -1,0 +1,2 @@
+# Optional tunnel dependencies (installed automatically by start-tunnel.bat)
+pyngrok>=7.0.0

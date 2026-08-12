@@ -37,8 +37,14 @@ echo   Added inbound firewall rule for TCP port 8000.
 
 :done
 echo.
-echo   Your phone can now connect when on the same network.
-echo   Run start.bat and use the LAN URL shown at startup.
+echo   Next steps:
+echo     1. Double-click phone-setup.bat  (firewall + server + phone URL)
+echo     2. On your phone, open the URL shown at startup
+echo.
+echo   If the phone still cannot connect:
+echo     - Phone must NOT use mobile data (SIM) while PC is on Wi-Fi
+echo     - Some phone hotspots block phone-to-PC access
+echo     - Use start-tunnel.bat for a public HTTPS link (works anywhere)
 echo.
 pause
 exit /b 0

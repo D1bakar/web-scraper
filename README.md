@@ -54,6 +54,7 @@ Deploy a **liquid glass dashboard**, **REST API**, **job queue**, and **11 extra
 | **Rate limit exceeded** during rapid testing | Health checks and job polling are exempt in v2.3.1. Restart the server after upgrading. Default limit is **120 POST requests/min** (360 on localhost). |
 | Hero overlay won't dismiss | Click **Launch Dashboard**, press **Escape**, or clear `localStorage` key `wsp_hero_seen`. |
 | Port **8000 already in use** | `start.ps1` / `start.bat` now stops stale listeners automatically. Or run `netstat -ano \| findstr :8000` and stop the PID manually. |
+| **Phone can't open dashboard** | Run **`phone-setup.bat`**. Still failing? Use **`start-tunnel.bat`**. Full guide: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
 | Empty price compare results | Verify your CSS selector matches the price element. Use **Smart hints** or the demo selector `.price_color` on books.toscrape.com. |
 
 ---
