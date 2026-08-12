@@ -1,5 +1,6 @@
 # Start Web Scraper Pro dashboard (Windows PowerShell)
-# Run from anywhere:  .\start.ps1
+# Run from web-scraper folder:  .\start.ps1
+# If you get PSSecurityException, use:  .\start.bat
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
@@ -53,4 +54,5 @@ Write-Host ""
 Write-Host "  Press Ctrl+C to stop the server." -ForegroundColor DarkGray
 Write-Host ""
 
+# Use python -m uvicorn so the venv is used even when uvicorn is not on PATH
 & $py -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload

@@ -8,6 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
+from app.core.config import get_settings
 from app.core.security import (
     SecurityError,
     validate_css_selector,
@@ -15,7 +16,6 @@ from app.core.security import (
     validate_url_ssrf,
     validate_urls_list,
 )
-from app.core.config import get_settings
 
 
 class ScrapeMode(str, Enum):

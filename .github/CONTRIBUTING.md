@@ -2,6 +2,13 @@
 
 Thank you for your interest in contributing. This project welcomes bug fixes, documentation improvements, and well-scoped feature additions.
 
+## Quick links
+
+- [Issues](https://github.com/D1bakar/web-scraper/issues) — bugs and feature requests
+- [Roadmap](../docs/ROADMAP.md) — planned work
+- [Security](../SECURITY.md) — vulnerability reporting
+- [Contributors](../CONTRIBUTORS.md) — project team
+
 ## Getting Started
 
 1. Fork the repository and clone your fork.
@@ -16,7 +23,7 @@ Thank you for your interest in contributing. This project welcomes bug fixes, do
 3. Copy `.env.example` to `.env` and run the app locally:
 
    ```bash
-   # Windows (recommended)
+   # Windows
    .\start.bat
 
    # Linux / macOS
@@ -43,10 +50,17 @@ Thank you for your interest in contributing. This project welcomes bug fixes, do
 - Keep scraping defaults polite — respect robots.txt and rate limits.
 - Do not commit secrets, `.env` files, or generated output in `data/` or `output/`.
 
+## Pull Request Checklist
+
+- [ ] Tests pass locally (`pytest tests/ -v`)
+- [ ] Lint passes (`ruff check app/ cli.py tests/`)
+- [ ] Documentation updated if behavior or config changed
+- [ ] No secrets or `.env` files included
+
 ## Reporting Issues
 
 Use [GitHub Issues](https://github.com/D1bakar/web-scraper/issues) for bugs and feature requests. Include steps to reproduce, expected vs. actual behavior, and your environment (OS, Python version).
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for reporting vulnerabilities privately.
+See [SECURITY.md](../SECURITY.md) for reporting vulnerabilities privately.

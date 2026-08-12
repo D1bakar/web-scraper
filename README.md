@@ -9,13 +9,17 @@
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED.svg" alt="Docker"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
   <a href="https://github.com/D1bakar/web-scraper/actions/workflows/ci.yml"><img src="https://github.com/D1bakar/web-scraper/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://github.com/D1bakar/web-scraper/issues"><img src="https://img.shields.io/badge/contributors-welcome-brightgreen.svg" alt="Contributors Welcome"></a>
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> ·
   <a href="#api-reference">API</a> ·
   <a href="docs/HOW_TO_COMPARE_PRICES.md">Compare Prices Guide</a> ·
+  <a href="docs/WHY_DIFFERENT.md">Why Different</a> ·
   <a href="docs/WHY.md">Why Web Scraper Pro</a> ·
+  <a href="docs/DEPLOYMENT.md">Deployment</a> ·
+  <a href="docs/ROADMAP.md">Roadmap</a> ·
   <a href="/api/docs">Live API Docs</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
@@ -25,6 +29,24 @@
 Web Scraper Pro transforms polite, structured web extraction into a **deployment-ready product**. Launch scrape jobs from a premium liquid-glass dashboard or REST API, track progress in real time, export results as JSON/CSV/Excel, and persist job history in SQLite — with robots.txt compliance, SSRF protection, rate limiting, and optional API key auth built in.
 
 > **v2.1** — Liquid glass UI overhaul, defense-in-depth security, job retry, health dashboard, webhook notifications, and SQLite concurrency hardening.
+
+---
+
+## Why Web Scraper Pro?
+
+Most scraping tools are disposable scripts or heavyweight frameworks. Web Scraper Pro is a **deployable product** — engineered with the rigor of a research-grade data pipeline and the polish of a production SaaS:
+
+| You get | What it means |
+|---------|---------------|
+| **Liquid glass dashboard** | A premium SPA — not a bare HTML form |
+| **REST API + OpenAPI** | Integrate into pipelines without custom glue |
+| **Security built in** | SSRF protection, rate limiting, optional API key auth, CSP headers |
+| **Price Compare mode** | Compare product prices across multiple URLs in one job |
+| **Job queue + SQLite history** | Track, retry, and export long-running extractions |
+| **Docker + Procfile + CI** | Ship to Railway, Render, or any VPS in minutes |
+| **robots.txt compliance** | Polite defaults — delays, retries, automatic checks |
+
+**Not another BeautifulSoup tutorial.** See the full comparison: [docs/WHY_DIFFERENT.md](docs/WHY_DIFFERENT.md)
 
 ---
 
@@ -91,8 +113,12 @@ Run from the `web-scraper` folder:
 
 ```powershell
 cd web-scraper
+.\start.bat          # recommended — works when PowerShell scripts are blocked
+# or
 .\start.ps1
 ```
+
+> **Windows tip:** If `.\start.ps1` fails with `PSSecurityException`, use `.\start.bat` or run `powershell -ExecutionPolicy Bypass -File .\start.ps1`.
 
 Or manually:
 
@@ -204,6 +230,8 @@ curl -X POST http://localhost:8000/api/jobs \
 
 ## Cloud Deployment
 
+See the full guide: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
 ### Railway / Render
 
 Use the included `Procfile`:
@@ -282,7 +310,12 @@ web-scraper/
 │   ├── models/schemas.py    # Pydantic models
 │   ├── db/                  # SQLAlchemy models & session
 │   └── static/              # Dashboard UI (HTML/CSS/JS)
-├── docs/WHY.md              # Enterprise value proposition
+├── docs/
+│   ├── WHY_DIFFERENT.md     # Comparison vs other scrapers
+│   ├── WHY.md               # Enterprise value proposition
+│   ├── DEPLOYMENT.md        # Docker, Railway, Render, VPS
+│   ├── ROADMAP.md           # Planned features (links to issues)
+│   └── HOW_TO_COMPARE_PRICES.md
 ├── cli.py                   # Optional CLI
 ├── tests/                   # pytest suite
 ├── Dockerfile
@@ -310,7 +343,7 @@ pytest tests/ -v
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, and pull request guidelines.
+Contributions are welcome! Browse [open issues](https://github.com/D1bakar/web-scraper/issues) or read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, and pull request guidelines. See [CONTRIBUTORS.md](CONTRIBUTORS.md) for the project team.
 
 ---
 
