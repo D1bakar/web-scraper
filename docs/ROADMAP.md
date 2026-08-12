@@ -23,18 +23,18 @@ Future work is tracked as [GitHub Issues](https://github.com/D1bakar/web-scraper
 
 | Priority | Feature | Issue |
 |----------|---------|-------|
-| High | Bulk URL import from CSV | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| High | Scheduled / recurring scrape jobs | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| High | JavaScript-rendered pages (Playwright) | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| Medium | Proxy rotation support | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| Medium | User authentication & multi-tenant | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| Medium | AI-powered selector detection | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| Medium | Price comparison at scale (1000+ sites) | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| Low | Cloud deployment guides (AWS / GCP) | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| Low | Mobile app / PWA | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
-| Low | Performance benchmarking suite | [#TBD](https://github.com/D1bakar/web-scraper/issues) |
+| High | Bulk URL import from CSV | [#1](https://github.com/D1bakar/web-scraper/issues/1) |
+| High | Scheduled / recurring scrape jobs | [#2](https://github.com/D1bakar/web-scraper/issues/2) |
+| High | JavaScript-rendered pages (Playwright) | [#4](https://github.com/D1bakar/web-scraper/issues/4) |
+| Medium | Proxy rotation support | [#3](https://github.com/D1bakar/web-scraper/issues/3) |
+| Medium | User authentication & multi-tenant | [#5](https://github.com/D1bakar/web-scraper/issues/5) |
+| Medium | AI-powered selector detection | [#9](https://github.com/D1bakar/web-scraper/issues/9) |
+| Medium | Price comparison at scale (1000+ sites) | [#7](https://github.com/D1bakar/web-scraper/issues/7) |
+| Low | Cloud deployment guides (AWS / GCP) | [#6](https://github.com/D1bakar/web-scraper/issues/6) |
+| Low | Mobile app / PWA | [#8](https://github.com/D1bakar/web-scraper/issues/8) |
+| Low | Performance benchmarking suite | [#10](https://github.com/D1bakar/web-scraper/issues/10) |
 
-> Issue links will be updated after creation. Browse all open issues: [github.com/D1bakar/web-scraper/issues](https://github.com/D1bakar/web-scraper/issues)
+Browse all open issues: [github.com/D1bakar/web-scraper/issues](https://github.com/D1bakar/web-scraper/issues)
 
 ---
 
