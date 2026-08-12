@@ -13,9 +13,26 @@ cd web-scraper
 .\start.bat
 ```
 
-The server binds to `0.0.0.0:8000` by default.
+The server binds to `0.0.0.0:8000` so other devices on your network can connect. On startup you'll see:
 
-### 2. Find your network URL
+```
+Dashboard (this PC):  http://127.0.0.1:8000
+Dashboard (phone):    http://192.168.x.x:8000
+```
+
+Use the **phone / LAN** URL on your mobile browser.
+
+### 2. Allow Windows Firewall (first time on Windows)
+
+If your phone cannot connect, run **as Administrator**:
+
+```cmd
+allow-phone-access.bat
+```
+
+This adds an inbound rule for TCP port 8000. Without it, Windows may block phone connections even when the server is running.
+
+### 3. Find your network URL
 
 On Windows PowerShell:
 
@@ -23,19 +40,63 @@ On Windows PowerShell:
 ipconfig
 ```
 
-Look for **IPv4 Address** on your Wi-Fi adapter (e.g. `192.168.1.42`).
+Look for **IPv4 Address** on your active adapter (Wi-Fi or hotspot, e.g. `192.168.43.100`).
 
-On your phone (same Wi-Fi), open:
+On your phone (same network), open:
 
 ```
 http://192.168.1.42:8000
 ```
 
-Replace with your actual IP.
+Replace with the IP shown at startup or from `ipconfig`.
 
-### 3. Sign in (optional)
+### 4. Sign in (optional)
 
 If the server has `ADMIN_USER` and `ADMIN_PASSWORD` set in `.env`, you'll see a login page. Enter credentials to access the dashboard.
+
+---
+
+## Phone Hotspot Setup
+
+Use this when your PC has no Wi-Fi router, or you want the phone and PC on a network you control.
+
+### Steps
+
+1. **On your phone:** turn on **Mobile Hotspot** (Settings → Hotspot / Tethering).
+2. **On your PC:** connect to that hotspot Wi-Fi network (not your home Wi-Fi).
+3. **On your PC:** run `.\start.bat` in the `web-scraper` folder.
+4. **Note the LAN IP** printed at startup (e.g. `http://192.168.137.1:8000`), or run `ipconfig` and find IPv4 on the hotspot/Wi-Fi adapter.
+5. **On your phone:** open that URL in Chrome or Safari (same device that hosts the hotspot is fine).
+
+### Important limitations
+
+| Scenario | Works? |
+|----------|--------|
+| PC on phone hotspot, phone opens LAN IP | Yes |
+| PC on home Wi-Fi, phone on mobile data (SIM) | **No** — different networks |
+| PC on Wi-Fi, phone on same Wi-Fi | Yes |
+| PC on Ethernet, phone on Wi-Fi (same router) | Yes |
+
+**PC and phone must share a network.** If the PC is on office Wi-Fi and the phone uses cellular data, they cannot talk to each other directly.
+
+### First-time Windows checklist
+
+1. Run `allow-phone-access.bat` as Administrator (opens port 8000 in Windows Firewall).
+2. Run `start.bat` — confirm it shows a **phone / LAN** URL, not only `127.0.0.1`.
+3. On the phone, use `http://<LAN-IP>:8000` (not `127.0.0.1` — that always means "this device only").
+
+---
+
+## Alternative: ngrok (different networks / remote testing)
+
+When PC and phone are on **different networks** (e.g. PC at home, phone on mobile data away from home), use a tunnel:
+
+```powershell
+# Install ngrok, then with the server running on port 8000:
+ngrok http 8000
+```
+
+Open the `https://….ngrok-free.app` URL on your phone. Useful for demos; not recommended for production or sensitive data.
 
 ---
 
@@ -110,7 +171,9 @@ Restart the server. Mobile users sign in at `/login`.
 
 | Problem | Fix |
 |---------|-----|
-| Can't reach server from phone | Same Wi-Fi? Firewall allows port 8000? |
+| Can't reach server from phone | Same network (Wi-Fi or hotspot)? Run `allow-phone-access.bat` as Admin? Use LAN IP, not `127.0.0.1` |
+| Phone on mobile data, PC on Wi-Fi | Won't work — use hotspot or ngrok |
+| Only `127.0.0.1` works | Server was bound to localhost — update to latest and use `start.bat` (binds `0.0.0.0`) |
 | Login loop | Clear cookies; check ADMIN_USER/PASSWORD |
 | Install banner missing | iOS requires manual Add to Home Screen |
 | Old version cached | Hard refresh or clear site data |

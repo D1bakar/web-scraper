@@ -67,13 +67,11 @@ try {
 }
 
 Write-Host ""
-Write-Host "  Dashboard:  http://127.0.0.1:8000" -ForegroundColor Green
-Write-Host "  API docs:   http://127.0.0.1:8000/api/docs" -ForegroundColor Green
-Write-Host "  Health:     http://127.0.0.1:8000/api/health" -ForegroundColor Green
+& $py scripts/print_access_urls.py 8000
 Write-Host ""
 Write-Host "  Tip: verify version is 2.4.0 at /api/health before testing modes." -ForegroundColor DarkGray
 Write-Host "  Press Ctrl+C to stop the server." -ForegroundColor DarkGray
 Write-Host ""
 
-# Use python -m uvicorn so the venv is used even when uvicorn is not on PATH
-& $py -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+# Bind 0.0.0.0 so phones on the same Wi-Fi / hotspot can reach the dashboard
+& $py -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

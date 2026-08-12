@@ -43,11 +43,9 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr /R /C:":8000 .*LISTENING"') d
 )
 
 echo.
-echo   Dashboard:  http://127.0.0.1:8000
-echo   API docs:   http://127.0.0.1:8000/api/docs
-echo   Health:     http://127.0.0.1:8000/api/health
+"%PY%" scripts/print_access_urls.py 8000
 echo.
 echo   Press Ctrl+C to stop the server.
 echo.
 
-"%PY%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+"%PY%" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
