@@ -1,12 +1,16 @@
 <pre align="center">
 ╔══════════════════════════════════════════════════════════════════╗
 ║                                                                  ║
-║   ⚡  W E B   S C R A P E R   P R O  ⚡                           ║
+║        W E B   S C R A P E R   P R O                             ║
 ║                                                                  ║
 ║        E X T R A C T   T H E   W E B .   I N S T A N T L Y .     ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 </pre>
+
+<p align="center">
+  <img src="app/static/img/logo.svg" alt="Web Scraper Pro logo" width="120" height="120">
+</p>
 
 <p align="center">
   <strong>The open-source scraper that makes BeautifulSoup scripts look prehistoric.</strong>
@@ -18,7 +22,7 @@
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License"></a>
   <a href="https://github.com/D1bakar/web-scraper/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/D1bakar/web-scraper/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI Status"></a>
-  <a href="https://github.com/D1bakar/web-scraper/releases"><img src="https://img.shields.io/badge/version-2.4.0-blue?style=for-the-badge" alt="v2.4.0"></a>
+  <a href="https://github.com/D1bakar/web-scraper/releases"><img src="https://img.shields.io/badge/version-2.5.0-blue?style=for-the-badge" alt="v2.5.0"></a>
   <a href="docs/MOBILE.md"><img src="https://img.shields.io/badge/Mobile--First-320px%2B-7c6ff7?style=for-the-badge" alt="Mobile First"></a>
   <a href="docs/MOBILE.md"><img src="https://img.shields.io/badge/PWA-Installable-5A0FC8?style=for-the-badge&logo=pwa" alt="PWA"></a>
   <a href="https://github.com/D1bakar/web-scraper/stargazers"><img src="https://img.shields.io/github/stars/D1bakar/web-scraper?style=for-the-badge&logo=github&label=Stars" alt="GitHub Stars"></a>
@@ -41,7 +45,7 @@
 
 Deploy a **liquid glass dashboard**, **REST API**, **job queue**, and **11 extraction modes** in under 60 seconds. Track jobs in real time, export JSON/CSV/Excel, and sleep knowing SSRF protection, rate limits, and robots.txt compliance are built in.
 
-> **v2.4.0 — Mobile-First Release:** bottom nav, PWA install, mobile cards, admin login, schedules/webhooks/API keys MVP. [Mobile guide](docs/MOBILE.md) · [Audit](docs/MOBILE_AUDIT.md)
+> **v2.5.0 — Premium Fluid UI:** design tokens, staggered animations, refined liquid glass, bottom nav indicator, mode descriptions. [Mobile guide](docs/MOBILE.md) · [Audit](docs/MOBILE_AUDIT.md)
 
 ---
 

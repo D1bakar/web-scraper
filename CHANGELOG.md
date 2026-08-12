@@ -2,6 +2,32 @@
 
 All notable changes to Web Scraper Pro are documented here.
 
+## [2.5.0] — 2026-08-12 — Premium Fluid UI
+
+### Added — Design System
+- **Design tokens** — spacing scale, typography scale, color palette, shadows, blur levels
+- **Page load fade-in** — subtle entrance animation on dashboard load
+- **Staggered reveals** — mode grid, results rows/cards, price chart bars, job cards
+- **View transitions** — smooth enter/exit between Scrape, Jobs, History, Settings, More
+- **Bottom nav indicator** — animated sliding pill for active tab
+- **Mode grid descriptions** — icon + label + short desc on each of 11 mode cards
+- **Job card status coding** — color-coded left border (running/completed/failed/pending)
+- **`@prefers-reduced-motion`** — respects accessibility settings across all animations
+
+### Changed — UI/UX Polish
+- **Refined glass panels** — gradient fill, stronger borders, hover elevation
+- **Fluid buttons** — animated gradient, loading shimmer, press feedback
+- **Progress bars** — flowing multi-color gradient animation
+- **Toasts** — slide-in + fade-out with spring easing
+- **Price chart** — cheapest bar highlighted green with glow
+- **Section headers** — consistent icon + title + subtitle layout across all views
+- **Hero overlay** — SVG gradient lightning icon with pulse glow
+- **Form focus rings** — accent glow on all inputs
+- **Smooth scroll to results** after job completion
+
+### Fixed
+- Confetti skipped when reduced motion is preferred
+
 ## [2.4.0] — 2026-08-12 — Mobile-First Release
 
 ### Added — Mobile UI

@@ -3,28 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#7c6ff7">
+  <meta name="theme-color" content="#6366f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
+  <link rel="apple-touch-icon" href="/static/img/icon-192.png">
   <title>Web Scraper Pro — Extract the Web</title>
   <meta name="description" content="Extract the web. Instantly. Open-source scraper with liquid glass UI, 11 modes, price compare, and REST API.">
   <meta property="og:title" content="Web Scraper Pro — Extract the Web">
   <meta property="og:description" content="The open-source scraper that makes BeautifulSoup scripts look prehistoric. 11 modes, price compare, liquid glass dashboard.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://github.com/D1bakar/web-scraper">
+  <meta property="og:image" content="/static/img/icon-512.png">
+  <meta property="og:image:alt" content="Web Scraper Pro logo — globe with data extraction rays">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Web Scraper Pro — Extract the Web">
   <meta name="twitter:description" content="Extract the web. Instantly. Open-source, 11 modes, MIT licensed.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <meta name="twitter:image" content="/static/img/icon-512.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body>
+<body class="page-loading">
   <!-- Hero overlay (first visit) -->
   <div id="hero-overlay" class="hero-overlay" aria-hidden="false">
     <div class="hero-particles" aria-hidden="true">
@@ -32,7 +36,9 @@
       <span class="particle"></span><span class="particle"></span><span class="particle"></span>
     </div>
     <div class="hero-content glass-panel iridescent-border">
-      <div class="hero-icon">⚡</div>
+      <div class="hero-icon-wrap" aria-hidden="true">
+        <img src="/static/img/logo.svg" alt="" class="logo logo-hero" width="64" height="64">
+      </div>
       <h1 class="gradient-text hero-title">Extract the web.<br>Instantly.</h1>
       <p class="hero-subtitle">11 scrape modes · liquid glass dashboard · open source · MIT</p>
       <button type="button" id="hero-enter-btn" class="btn btn-primary btn-glow hero-cta">Launch Dashboard →</button>
@@ -53,9 +59,7 @@
     <aside class="sidebar glass-panel" id="sidebar">
       <div class="brand">
         <div class="brand-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-          </svg>
+          <img src="/static/img/logo.svg" alt="" class="logo logo-sidebar" width="28" height="28" aria-hidden="true">
         </div>
         <div>
           <h1>Web Scraper Pro</h1>
@@ -91,11 +95,16 @@
       <div id="mobile-dashboard" class="mobile-dashboard hidden"></div>
 
       <!-- Scrape View -->
-      <section id="view-scrape" class="view active">
-        <header class="page-header fade-in">
-          <div class="header-badge">Featured</div>
-          <h2 class="gradient-text">New Scrape Job</h2>
-          <p id="page-subtitle">Compare prices across websites — or choose an advanced scrape mode</p>
+      <section id="view-scrape" class="view active" aria-label="New Scrape">
+        <header class="page-header section-header fade-in">
+          <div class="section-header-inner">
+            <div class="section-header-icon" aria-hidden="true">⚡</div>
+            <div class="section-header-text">
+              <div class="header-badge">Featured</div>
+              <h2 class="gradient-text">New Scrape Job</h2>
+              <p id="page-subtitle">Compare prices across websites — or choose an advanced scrape mode</p>
+            </div>
+          </div>
         </header>
 
         <div class="grid-2">
@@ -259,10 +268,15 @@
       </section>
 
       <!-- History View -->
-      <section id="view-history" class="view">
-        <header class="page-header fade-in">
-          <h2>Job History</h2>
-          <p>Past scrape jobs — view results or retry failed jobs</p>
+      <section id="view-history" class="view" aria-label="Job History">
+        <header class="page-header section-header fade-in">
+          <div class="section-header-inner">
+            <div class="section-header-icon" aria-hidden="true">📋</div>
+            <div class="section-header-text">
+              <h2>Job History</h2>
+              <p>Past scrape jobs — view results or retry failed jobs</p>
+            </div>
+          </div>
         </header>
         <div class="card glass-panel slide-up">
           <div class="table-wrap desktop-only" id="history-table-wrap">
@@ -286,19 +300,29 @@
       </section>
 
       <!-- Jobs View (mobile-friendly monitoring) -->
-      <section id="view-jobs" class="view">
-        <header class="page-header fade-in">
-          <h2>Jobs</h2>
-          <p>Active and recent scrape jobs</p>
+      <section id="view-jobs" class="view" aria-label="Jobs">
+        <header class="page-header section-header fade-in">
+          <div class="section-header-inner">
+            <div class="section-header-icon" aria-hidden="true">📡</div>
+            <div class="section-header-text">
+              <h2>Jobs</h2>
+              <p>Active and recent scrape jobs</p>
+            </div>
+          </div>
         </header>
         <div id="jobs-dashboard" class="jobs-dashboard"></div>
       </section>
 
       <!-- Health Dashboard -->
-      <section id="view-health" class="view">
-        <header class="page-header fade-in">
-          <h2>System Health</h2>
-          <p>Real-time platform status and security configuration</p>
+      <section id="view-health" class="view" aria-label="System Health">
+        <header class="page-header section-header fade-in">
+          <div class="section-header-inner">
+            <div class="section-header-icon" aria-hidden="true">💎</div>
+            <div class="section-header-text">
+              <h2>System Health</h2>
+              <p>Real-time platform status and security configuration</p>
+            </div>
+          </div>
         </header>
         <div id="health-dashboard" class="health-grid">
           <div class="health-card glass-panel skeleton-card">
@@ -310,10 +334,15 @@
       </section>
 
       <!-- Settings View -->
-      <section id="view-settings" class="view">
-        <header class="page-header fade-in">
-          <h2>Settings</h2>
-          <p>Configure scraping defaults for new jobs</p>
+      <section id="view-settings" class="view" aria-label="Settings">
+        <header class="page-header section-header fade-in">
+          <div class="section-header-inner">
+            <div class="section-header-icon" aria-hidden="true">⚙️</div>
+            <div class="section-header-text">
+              <h2>Settings</h2>
+              <p>Configure scraping defaults for new jobs</p>
+            </div>
+          </div>
         </header>
         <div class="card glass-panel settings-card slide-up">
           <div class="settings-tabs" role="tablist">
@@ -422,10 +451,15 @@
       </section>
 
       <!-- More View -->
-      <section id="view-more" class="view">
-        <header class="page-header fade-in">
-          <h2>More</h2>
-          <p>System health, API docs, and account</p>
+      <section id="view-more" class="view" aria-label="More">
+        <header class="page-header section-header fade-in">
+          <div class="section-header-inner">
+            <div class="section-header-icon" aria-hidden="true">⋯</div>
+            <div class="section-header-text">
+              <h2>More</h2>
+              <p>System health, API docs, and account</p>
+            </div>
+          </div>
         </header>
         <div class="more-grid">
           <button type="button" class="more-card glass-panel" data-goto="health">
@@ -450,13 +484,17 @@
     </main>
 
     <footer class="app-footer desktop-only">
-      <span class="oss-badge">⚡ Powered by open source · MIT</span>
+      <span class="oss-badge">
+        <img src="/static/img/logo.svg" alt="" class="logo logo-footer" width="16" height="16" aria-hidden="true">
+        Powered by open source · MIT
+      </span>
       <a href="https://github.com/D1bakar/web-scraper" target="_blank" rel="noopener">GitHub</a>
     </footer>
   </div>
 
   <!-- Mobile bottom navigation -->
   <nav class="bottom-nav mobile-only" id="bottom-nav" aria-label="Main navigation">
+    <span class="bottom-nav-indicator" id="bottom-nav-indicator" aria-hidden="true"></span>
     <button type="button" class="bottom-nav-item active" data-view="scrape" aria-label="New Scrape">
       <span class="bottom-nav-icon">⚡</span>
       <span class="bottom-nav-label">New Scrape</span>

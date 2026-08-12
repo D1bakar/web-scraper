@@ -216,36 +216,79 @@
     return `${Math.floor(sec / 60)}m ${sec % 60}s elapsed`;
   }
 
+  function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function initPageLoad() {
+    requestAnimationFrame(() => {
+      document.body.classList.remove('page-loading');
+      document.body.classList.add('page-ready');
+    });
+  }
+
+  function updateBottomNavIndicator(view) {
+    const indicator = $('#bottom-nav-indicator');
+    const nav = $('#bottom-nav');
+    if (!indicator || !nav) return;
+    const items = [...nav.querySelectorAll('.bottom-nav-item')];
+    const idx = items.findIndex((b) => b.dataset.view === view);
+    if (idx < 0) return;
+    const itemWidth = 100 / items.length;
+    indicator.style.width = `${itemWidth}%`;
+    indicator.style.transform = `translateX(${idx * 100}%)`;
+  }
+
+  function staggerReveal(container, selector = '.stagger-item') {
+    if (!container || prefersReducedMotion()) return;
+    container.querySelectorAll(selector).forEach((el, i) => {
+      el.style.animationDelay = `${Math.min(i * 0.04, 0.6)}s`;
+    });
+  }
+
+  function scrollToResults() {
+    const section = $('#results-section');
+    if (!section || section.classList.contains('hidden')) return;
+    const behavior = prefersReducedMotion() ? 'auto' : 'smooth';
+    section.scrollIntoView({ behavior, block: 'start' });
+  }
+
   function navigateToView(view) {
+    const current = $('.view.active');
+    if (current && current.id !== `view-${view}`) {
+      current.classList.add('view-exit');
+      setTimeout(() => current.classList.remove('view-exit'), 220);
+    }
     $$('.nav-item, .bottom-nav-item').forEach((b) => {
       b.classList.toggle('active', b.dataset.view === view);
     });
     $$('.view').forEach((v) => {
-      v.classList.remove('active', 'view-exit');
+      v.classList.remove('active', 'view-exit', 'view-enter');
       if (v.id === `view-${view}`) {
         v.classList.add('active', 'view-enter');
-        setTimeout(() => v.classList.remove('view-enter'), 300);
+        setTimeout(() => v.classList.remove('view-enter'), 450);
       }
     });
+    updateBottomNavIndicator(view);
     if (view === 'history') loadHistory();
     if (view === 'health' || view === 'more') loadHealthDashboard();
     if (view === 'jobs') loadJobsDashboard();
     if (view === 'settings') loadSettingsPanels();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   }
 
   const MODE_GRID = [
-    { value: 'price_compare', icon: '💰', label: 'Price Compare' },
-    { value: 'quotes', icon: '📖', label: 'Quotes Demo' },
-    { value: 'meta', icon: '🏷️', label: 'Metadata' },
-    { value: 'links', icon: '🔗', label: 'Links' },
-    { value: 'tables', icon: '📊', label: 'Tables' },
-    { value: 'selectors', icon: '🎯', label: 'Selectors' },
-    { value: 'sitemap', icon: '🗺️', label: 'Sitemap' },
-    { value: 'email_extract', icon: '📧', label: 'Emails' },
-    { value: 'json_ld', icon: '📦', label: 'JSON-LD' },
-    { value: 'social_meta', icon: '📱', label: 'Social Meta' },
-    { value: 'readability', icon: '📰', label: 'Readability' },
+    { value: 'price_compare', icon: '💰', label: 'Price Compare', desc: 'Multi-site price table' },
+    { value: 'quotes', icon: '📖', label: 'Quotes Demo', desc: 'Quick first demo' },
+    { value: 'meta', icon: '🏷️', label: 'Metadata', desc: 'Title, desc, headings' },
+    { value: 'links', icon: '🔗', label: 'Links', desc: 'Extract hyperlinks' },
+    { value: 'tables', icon: '📊', label: 'Tables', desc: 'HTML table rows' },
+    { value: 'selectors', icon: '🎯', label: 'Selectors', desc: 'Custom CSS matches' },
+    { value: 'sitemap', icon: '🗺️', label: 'Sitemap', desc: 'Crawl all URLs' },
+    { value: 'email_extract', icon: '📧', label: 'Emails', desc: 'Find addresses' },
+    { value: 'json_ld', icon: '📦', label: 'JSON-LD', desc: 'Schema.org data' },
+    { value: 'social_meta', icon: '📱', label: 'Social Meta', desc: 'OG & Twitter' },
+    { value: 'readability', icon: '📰', label: 'Readability', desc: 'Clean article text' },
   ];
 
   function loadSettings() {
@@ -311,15 +354,13 @@
   function toast(message, type = 'info') {
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
+    el.setAttribute('role', 'status');
     el.textContent = message;
     $('#toast-container').appendChild(el);
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateX(110%)';
-        setTimeout(() => el.remove(), 300);
-      }, 4000);
-    });
+    setTimeout(() => {
+      el.classList.add('toast-out');
+      setTimeout(() => el.remove(), 350);
+    }, 4000);
   }
 
   function initHero() {
@@ -349,11 +390,13 @@
     const select = $('#mode');
     if (!grid || !select) return;
     grid.innerHTML = MODE_GRID.map(
-      (m) => `
-        <button type="button" class="mode-card${select.value === m.value ? ' active' : ''}"
-          data-mode="${m.value}" role="radio" aria-checked="${select.value === m.value}">
-          <span class="mode-card-icon">${m.icon}</span>
+      (m, i) => `
+        <button type="button" class="mode-card stagger-item${select.value === m.value ? ' active' : ''}"
+          data-mode="${m.value}" role="radio" aria-checked="${select.value === m.value}"
+          style="animation-delay:${Math.min(i * 0.035, 0.35)}s">
+          <span class="mode-card-icon" aria-hidden="true">${m.icon}</span>
           <span class="mode-card-label">${m.label}</span>
+          <span class="mode-card-desc">${m.desc}</span>
         </button>
       `
     ).join('');
@@ -371,6 +414,7 @@
   }
 
   function confettiBurst() {
+    if (prefersReducedMotion()) return;
     const container = $('#confetti-container');
     if (!container) return;
     const colors = ['#38bdf8', '#7c6ff7', '#ec4899', '#34d399', '#fbbf24'];
@@ -411,7 +455,7 @@
             try { label = new URL(r.url).hostname.replace(/^www\./, ''); } catch { label = r.url; }
           }
           return `
-            <div class="price-bar-row">
+            <div class="price-bar-row stagger-item" style="animation-delay:${i * 0.07}s">
               <span class="price-bar-label" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
               <div class="price-bar-track">
                 <div class="price-bar-fill" style="width:${pct}%;animation-delay:${i * 0.08}s"></div>
@@ -782,6 +826,7 @@
     e.preventDefault();
     const btn = $('#submit-btn');
     btn.disabled = true;
+    btn.classList.add('is-loading');
     $('.btn-text').classList.add('hidden');
     $('.btn-loader').classList.remove('hidden');
 
@@ -808,6 +853,7 @@
       if (!urls.length) {
         toast('Paste at least one product page URL', 'error');
         btn.disabled = false;
+        btn.classList.remove('is-loading');
         $('.btn-text').classList.remove('hidden');
         $('.btn-loader').classList.add('hidden');
         return;
@@ -815,6 +861,7 @@
       if (urls.length > MAX_COMPARE_URLS) {
         toast(`Maximum ${MAX_COMPARE_URLS} URLs per run. Run multiple batches for more sites.`, 'error');
         btn.disabled = false;
+        btn.classList.remove('is-loading');
         $('.btn-text').classList.remove('hidden');
         $('.btn-loader').classList.add('hidden');
         return;
@@ -872,6 +919,7 @@
       toast(err.message, 'error');
     } finally {
       btn.disabled = false;
+      btn.classList.remove('is-loading');
       $('.btn-text').classList.remove('hidden');
       $('.btn-loader').classList.add('hidden');
     }
@@ -998,6 +1046,12 @@
     void section.offsetWidth;
     section.classList.add('reveal');
     currentJobId = jobId;
+    requestAnimationFrame(() => {
+      staggerReveal($('#results-table tbody'), 'tr');
+      staggerReveal($('#results-cards'), '.result-card');
+      staggerReveal($('#price-chart'), '.price-bar-row');
+      scrollToResults();
+    });
   }
 
   function normalizeResults(data, mode) {
@@ -1237,7 +1291,7 @@
 
     cardsEl.classList.remove('hidden');
     cardsEl.innerHTML = rows.map((row, idx) => `
-      <div class="result-card">
+      <div class="result-card stagger-item" style="animation-delay:${Math.min(idx * 0.05, 0.5)}s">
         <div class="result-card-row"><span class="result-card-label">#</span><span class="result-card-value">${idx + 1}</span></div>
         ${keys.map((k) => {
           const val = flatten(row[k]);
@@ -1296,8 +1350,8 @@
     thead.innerHTML = `<tr>${keys.map((k) => `<th>${escapeHtml(getColumnLabel(mode, k))}</th>`).join('')}</tr>`;
     tbody.innerHTML = rows
       .map(
-        (row) =>
-          `<tr>${keys
+        (row, rowIdx) =>
+          `<tr class="stagger-item" style="animation-delay:${Math.min(rowIdx * 0.03, 0.5)}s">${keys
             .map((k) => {
               const val = flatten(row[k]);
               if (mode === 'price_compare' && k === 'url' && val) {
@@ -1408,9 +1462,16 @@
       </tr>`;
   }
 
+  function jobStatusClass(status) {
+    if (status === 'completed') return 'status-completed';
+    if (status === 'failed') return 'status-failed';
+    if (status === 'running' || status === 'pending') return 'status-running';
+    return 'status-pending';
+  }
+
   function historyCardHtml(job) {
     return `
-      <div class="history-card">
+      <div class="history-card ${jobStatusClass(job.status)}">
         <div class="history-card-header">
           <strong>${job.mode}</strong>
           <span class="badge badge-${job.status === 'completed' ? 'healthy' : job.status === 'failed' ? 'error' : 'pending'}">${job.status}</span>
@@ -1441,8 +1502,8 @@
         el.innerHTML = '<p style="color:var(--text-muted);text-align:center">No jobs yet — start a scrape!</p>';
         return;
       }
-      el.innerHTML = jobs.map((job) => `
-        <div class="job-card glass-panel">
+      el.innerHTML = jobs.map((job, i) => `
+        <div class="job-card glass-panel ${jobStatusClass(job.status)} stagger-item" style="animation-delay:${Math.min(i * 0.06, 0.4)}s">
           <div class="job-card-header">
             <strong>${job.mode}</strong>
             <span class="badge badge-${job.status === 'completed' ? 'healthy' : job.status === 'failed' ? 'error' : 'pending'}">${job.status}</span>
@@ -1715,6 +1776,8 @@
       if (!authed) return;
       registerServiceWorker();
       initHero();
+      initPageLoad();
+      updateBottomNavIndicator('scrape');
       applySettingsToForm();
       restoreFormDraft();
       checkHealth();

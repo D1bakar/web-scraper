@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 Write-Host ""
-Write-Host "  Web Scraper Pro v2.4.0" -ForegroundColor Cyan
+Write-Host "  Web Scraper Pro v2.5.0" -ForegroundColor Cyan
 Write-Host "  ======================" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -75,7 +75,7 @@ Write-Host ""
 if ($phoneSetup) {
     Write-Host "  Still cannot connect? Double-click start-tunnel.bat for a public HTTPS URL." -ForegroundColor Yellow
 }
-Write-Host "  Tip: verify version is 2.4.0 at /api/health before testing modes." -ForegroundColor DarkGray
+Write-Host "  Tip: verify version is 2.5.0 at /api/health before testing modes." -ForegroundColor DarkGray
 Write-Host "  Press Ctrl+C to stop the server." -ForegroundColor DarkGray
 Write-Host ""
 
