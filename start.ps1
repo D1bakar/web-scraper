@@ -6,13 +6,14 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 Write-Host ""
-Write-Host "  Web Scraper Pro v2.3.1" -ForegroundColor Cyan
+Write-Host "  Web Scraper Pro v2.4.0" -ForegroundColor Cyan
 Write-Host "  ======================" -ForegroundColor DarkGray
 Write-Host ""
 
 # Verify Python is available
 try {
     $pythonVersion = python --version 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Python not found" }
     Write-Host "  Python: $pythonVersion" -ForegroundColor DarkGray
 } catch {
     Write-Host "  ERROR: Python not found. Install Python 3.10+ from https://python.org" -ForegroundColor Red
@@ -46,11 +47,11 @@ if (-not (Test-Path ".env")) {
 # Ensure data directory exists
 New-Item -ItemType Directory -Force -Path "data" | Out-Null
 
-# Free port 8000 if an old server is still running (prevents stale v2.1 instances)
+# Free port 8000 if an old server is still running (prevents stale instances)
 try {
     $conn = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($conn) {
-        Write-Host "  Port 8000 in use — stopping PID $($conn.OwningProcess)..." -ForegroundColor Yellow
+        Write-Host "  Port 8000 in use - stopping PID $($conn.OwningProcess)..." -ForegroundColor Yellow
         Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 1
     }
@@ -59,7 +60,7 @@ try {
     $netstat = netstat -ano | Select-String ":8000\s+.*LISTENING\s+(\d+)" | Select-Object -First 1
     if ($netstat -match "(\d+)\s*$") {
         $oldPid = [int]$Matches[1]
-        Write-Host "  Port 8000 in use — stopping PID $oldPid..." -ForegroundColor Yellow
+        Write-Host "  Port 8000 in use - stopping PID $oldPid..." -ForegroundColor Yellow
         Stop-Process -Id $oldPid -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 1
     }
@@ -70,7 +71,7 @@ Write-Host "  Dashboard:  http://127.0.0.1:8000" -ForegroundColor Green
 Write-Host "  API docs:   http://127.0.0.1:8000/api/docs" -ForegroundColor Green
 Write-Host "  Health:     http://127.0.0.1:8000/api/health" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Tip: verify version is 2.3.1 at /api/health before testing modes." -ForegroundColor DarkGray
+Write-Host "  Tip: verify version is 2.4.0 at /api/health before testing modes." -ForegroundColor DarkGray
 Write-Host "  Press Ctrl+C to stop the server." -ForegroundColor DarkGray
 Write-Host ""
 
