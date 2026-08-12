@@ -3,19 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Scraper Pro — Engineered for Reliability at Scale</title>
+  <title>Web Scraper Pro — Extract the Web</title>
+  <meta name="description" content="Extract the web. Instantly. Open-source scraper with liquid glass UI, 11 modes, price compare, and REST API.">
+  <meta property="og:title" content="Web Scraper Pro — Extract the Web">
+  <meta property="og:description" content="The open-source scraper that makes BeautifulSoup scripts look prehistoric. 11 modes, price compare, liquid glass dashboard.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://github.com/D1bakar/web-scraper">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Web Scraper Pro — Extract the Web">
+  <meta name="twitter:description" content="Extract the web. Instantly. Open-source, 11 modes, MIT licensed.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+  <!-- Hero overlay (first visit) -->
+  <div id="hero-overlay" class="hero-overlay" aria-hidden="false">
+    <div class="hero-particles" aria-hidden="true">
+      <span class="particle"></span><span class="particle"></span><span class="particle"></span>
+      <span class="particle"></span><span class="particle"></span><span class="particle"></span>
+    </div>
+    <div class="hero-content glass-panel iridescent-border">
+      <div class="hero-icon">⚡</div>
+      <h1 class="gradient-text hero-title">Extract the web.<br>Instantly.</h1>
+      <p class="hero-subtitle">11 scrape modes · liquid glass dashboard · open source · MIT</p>
+      <button type="button" id="hero-enter-btn" class="btn btn-primary btn-glow hero-cta">Launch Dashboard →</button>
+      <p class="hero-footnote">The scraper that makes BeautifulSoup scripts look prehistoric</p>
+    </div>
+  </div>
+
   <!-- Animated background -->
   <div class="bg-mesh" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
     <div class="orb orb-4"></div>
+    <div class="orb orb-5"></div>
   </div>
 
   <div class="app">
@@ -28,7 +53,7 @@
         </div>
         <div>
           <h1>Web Scraper Pro</h1>
-          <p>Engineered for reliability at scale</p>
+          <p>Extract the web. Instantly.</p>
         </div>
       </div>
 
@@ -60,16 +85,17 @@
       <section id="view-scrape" class="view active">
         <header class="page-header fade-in">
           <div class="header-badge">Featured</div>
-          <h2>New Scrape Job</h2>
+          <h2 class="gradient-text">New Scrape Job</h2>
           <p id="page-subtitle">Compare prices across websites — or choose an advanced scrape mode</p>
         </header>
 
         <div class="grid-2">
-          <div class="card glass-panel slide-up">
+          <div class="card glass-panel iridescent-border slide-up">
             <form id="scrape-form">
               <div class="form-group">
-                <label for="mode">What do you want to do?</label>
-                <select id="mode" name="mode" required>
+                <label>What do you want to do?</label>
+                <div id="mode-grid" class="mode-grid" role="radiogroup" aria-label="Scrape mode"></div>
+                <select id="mode" name="mode" required class="sr-only" aria-hidden="true" tabindex="-1">
                   <option value="price_compare">💰 Price Compare — compare product prices</option>
                   <option value="quotes">📖 Quotes Demo — recommended start</option>
                   <option value="meta">🏷️ Page Metadata</option>
@@ -188,12 +214,17 @@
           </div>
         </div>
 
-        <div class="card glass-panel results-card hidden reveal" id="results-section">
+        <div class="card glass-panel iridescent-border results-card hidden reveal" id="results-section">
           <div id="results-summary" class="results-summary hidden"></div>
+          <div id="price-chart" class="price-chart hidden"></div>
           <div class="results-header">
             <h3 class="card-title">Results</h3>
             <div class="results-actions">
               <input type="search" id="results-search" placeholder="Search results..." class="search-input">
+              <div class="share-btns">
+                <button type="button" class="btn btn-ghost btn-sm" id="copy-results-btn">📋 Copy</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="share-twitter-btn">𝕏 Share</button>
+              </div>
               <div class="export-btns">
                 <button class="btn btn-ghost btn-sm" data-export="json">JSON</button>
                 <button class="btn btn-ghost btn-sm" data-export="csv">CSV</button>
@@ -292,8 +323,14 @@
         </div>
       </section>
     </main>
+
+    <footer class="app-footer">
+      <span class="oss-badge">⚡ Powered by open source · MIT</span>
+      <a href="https://github.com/D1bakar/web-scraper" target="_blank" rel="noopener">GitHub</a>
+    </footer>
   </div>
 
+  <div id="confetti-container" aria-hidden="true"></div>
   <div id="toast-container"></div>
   <script src="/static/js/app.js"></script>
 </body>

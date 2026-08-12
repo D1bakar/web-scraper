@@ -1,81 +1,82 @@
 # Why Web Scraper Pro Is Different
 
-Web Scraper Pro is not another BeautifulSoup tutorial script. It is a **production-grade extraction platform** — designed with the rigor of a research-grade data pipeline and the polish of a deployable SaaS product.
+**One line:** The open-source scraper that makes BeautifulSoup scripts look prehistoric.
 
-## Comparison at a Glance
+---
 
-| Dimension | DIY BeautifulSoup script | Scrapy | Octoparse / ParseHub | **Web Scraper Pro** |
-|-----------|-------------------------|--------|----------------------|---------------------|
-| **Time to deploy** | Hours of glue code | Days (framework learning curve) | Minutes (SaaS signup) | **Minutes** (Docker / `start.ps1`) |
-| **REST API + OpenAPI** | Build yourself | Requires Scrapy Cloud or custom | Limited / paid tiers | **Built-in** (`/api/docs`) |
-| **Dashboard UI** | None | None | Visual point-and-click | **Liquid glass SPA** |
-| **Job queue & history** | Manual | Via extensions | Cloud-managed | **SQLite WAL + retry** |
-| **Modes** | Write custom parsers | Spider templates | Visual templates | **11 modes** — sitemap, emails, JSON-LD, social meta, readability + more |
-| **Price comparison** | Custom logic | Custom spider | Template-based | **First-class mode** (50 URLs/run + CSV import) |
-| **Selector intelligence** | Manual inspect | Manual | Auto-detect (paid) | **Heuristic hints** (no API key needed) |
-| **Performance stats** | None | External monitoring | Vendor dashboard | **Built-in `/api/stats`** |
-| **Security (SSRF, rate limit)** | Your responsibility | Partial | Vendor-managed | **SSRF blocklist, API key, CSP** |
-| **robots.txt compliance** | Optional | Built-in | Varies | **On by default** |
-| **Export formats** | Print to stdout | Item pipelines | CSV/Excel | **JSON, CSV, Excel** |
-| **Self-hosted / no vendor lock-in** | Yes | Yes | No (SaaS) | **Yes** (MIT, Docker) |
-| **JavaScript rendering** | Needs Playwright add-on | Splash / Playwright | Built-in | Roadmap (see issues) |
-| **Scale (1000+ sites)** | Fragile | Excellent | Enterprise plans | Batch + API (roadmap) |
+## The Gap Nobody Filled
 
-## v2.2 Scrape Modes — What Others Don't Ship Out of the Box
+| Tool | Reality |
+|------|---------|
+| **BeautifulSoup script** | Works once. Breaks in prod. No UI. No history. You rebuild the glue. |
+| **Scrapy** | Powerful — after days of learning spiders, pipelines, and settings. No dashboard. |
+| **Octoparse / ParseHub** | Fast start — until you're locked in, capped, and paying per row. |
+| **Web Scraper Pro** | Deploy in 60 seconds. Dashboard + API + 11 modes + exports. MIT. Self-hosted. |
 
-| Mode | What it does | Typical DIY effort |
-|------|--------------|-------------------|
-| **SITEMAP** | Crawl sitemap.xml → all URLs | Custom XML parser + recursion |
-| **EMAIL_EXTRACT** | Find emails in text + mailto links | Regex + edge case handling |
-| **JSON_LD** | schema.org products, prices, ratings | JSON parsing + schema mapping |
-| **SOCIAL_META** | og:* and twitter:* tags | Manual meta tag iteration |
-| **READABILITY** | Clean article text extraction | readability-lxml integration |
-| **Price Compare** | Multi-site price table + CSV import | Full custom pipeline |
-| **Smart Selectors** | Heuristic CSS hints | Manual inspect every time |
+---
 
-## What Sets It Apart
+## Head-to-Head
 
-### Engineered, not improvised
+| Dimension | DIY Script | Scrapy | Octoparse | **Web Scraper Pro** |
+|-----------|:----------:|:------:|:---------:|:-------------------:|
+| Time to deploy | Hours | Days | Minutes | **60 seconds** |
+| REST API + OpenAPI | Build it | Partial | Limited | **✅ Built-in** |
+| Dashboard UI | ❌ | ❌ | ✅ SaaS | **✅ Liquid glass** |
+| Job queue & history | Manual | Extensions | Cloud | **✅ SQLite + retry** |
+| Scrape modes | 1 custom | Templates | Visual | **✅ 11 built-in** |
+| Price comparison | DIY pipeline | DIY spider | Template | **✅ 50 URLs + CSV** |
+| Smart selector hints | Inspect manually | Manual | Paid auto | **✅ Heuristic hints** |
+| Security (SSRF, rate limit) | Your problem | Partial | Vendor | **✅ Fortress mode** |
+| robots.txt | Optional | Built-in | Varies | **✅ On by default** |
+| Export JSON/CSV/Excel | stdout | Pipelines | Paid tiers | **✅ One click** |
+| Self-hosted / no lock-in | ✅ | ✅ | ❌ | **✅ MIT + Docker** |
+| Screenshot-worthy UI | ❌ | ❌ | ❌ | **✅ Built to share** |
 
-Every layer — async HTTP, job persistence, export pipelines, middleware security — is intentional. The codebase follows patterns you'd expect in a well-run data platform: typed schemas, health endpoints, CI, and documented deployment paths.
+---
 
-### Security by design
+## 11 Modes — What Others Make You Build
 
-Most scrapers treat security as an afterthought. Web Scraper Pro ships with:
+| Mode | DIY effort | Web Scraper Pro |
+|------|------------|-----------------|
+| 💰 Price Compare | Multi-URL fetch + parse + sort + CSV | **One form, one job** |
+| 🗺️ Sitemap Crawl | XML parser + index recursion | **Paste sitemap URL** |
+| 📧 Email Extract | Regex hell + mailto edge cases | **One click** |
+| 📦 JSON-LD | schema.org mapping by hand | **Structured output** |
+| 📱 Social Meta | Iterate og:* and twitter:* tags | **Card view** |
+| 📰 Readability | Integrate readability-lxml | **Built-in heuristics** |
 
-- **SSRF protection** — blocks private IP ranges and dangerous URL schemes
-- **Rate limiting** — per-IP sliding window (configurable)
-- **Optional API key auth** — lock down the API in production
-- **Security headers** — CSP, X-Frame-Options, HSTS in production mode
-- **Input validation** — URL, selector, and body size checks on every request
+---
 
-### Product, not a script
+## Product vs Script Mindset
 
 | Script mindset | Web Scraper Pro mindset |
 |----------------|-------------------------|
-| Run once, forget | Jobs persist in SQLite with history |
-| stdout or a CSV file | JSON / CSV / Excel download endpoints |
-| No UI | Premium liquid glass dashboard |
-| Manual restarts | Retry failed jobs from the UI or API |
-| Hope it works in prod | Health checks, Docker, Procfile, CI |
+| Run once, forget | Jobs persist in SQLite |
+| Print to stdout | JSON / CSV / Excel exports |
+| No UI | Liquid glass dashboard people share on Twitter |
+| Manual restarts | Retry failed jobs from UI or API |
+| Hope it works in prod | Health checks, Docker, CI, 39+ tests |
 
-### Polite and compliant
-
-Robots.txt checks, configurable delays, retries with backoff, and clear ethics guidance are defaults — not optional extras.
+---
 
 ## Who Should Use What
 
-| Use case | Recommendation |
-|----------|----------------|
-| One-off homework scrape | BeautifulSoup script |
-| Large-scale crawl of one domain | Scrapy |
-| Non-technical user, no code | Octoparse |
-| **Self-hosted API + dashboard + exports** | **Web Scraper Pro** |
-| **Price comparison across stores** | **Web Scraper Pro** |
-| **Integrate scraping into your app via REST** | **Web Scraper Pro** |
+| Use case | Best choice |
+|----------|-------------|
+| One-off homework | BeautifulSoup script |
+| Massive single-domain crawl | Scrapy |
+| Non-technical, no code | Octoparse |
+| **Self-hosted API + dashboard** | **Web Scraper Pro** |
+| **Multi-site price comparison** | **Web Scraper Pro** |
+| **REST integration tonight** | **Web Scraper Pro** |
+| **Screenshot and share on social** | **Web Scraper Pro** |
+
+---
 
 ## Philosophy
 
-Built by engineers who treat data extraction as infrastructure — not a disposable notebook cell. The goal is a tool you can **deploy today**, **integrate tomorrow**, and **extend** without rewriting from scratch.
+Built by engineers who treat extraction as **infrastructure** — deploy today, integrate tomorrow, extend without rewriting.
 
-See also: [WHY.md](WHY.md) · [DEPLOYMENT.md](DEPLOYMENT.md) · [ROADMAP.md](ROADMAP.md)
+**Extract the web. Instantly.**
+
+→ [PRODUCT.md](../PRODUCT.md) · [README](../README.md) · [DEPLOYMENT.md](DEPLOYMENT.md) · [ROADMAP.md](ROADMAP.md)

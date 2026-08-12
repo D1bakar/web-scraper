@@ -1,49 +1,55 @@
-# Open Source Philosophy
+# Open Source Manifesto
 
-**Web Scraper Pro** is engineered for reliability at scale — and we believe the best tools are built in the open.
+**Web Scraper Pro exists because scraping tools shouldn't suck.**
+
+Most developers are stuck choosing between fragile scripts and expensive SaaS lock-in. We built the third option: a **beautiful, self-hosted, MIT-licensed platform** you can deploy tonight and screenshot tomorrow.
+
+## Our Belief
+
+> **Extract the web. Instantly.**
+
+Data extraction is infrastructure — not a disposable notebook cell. It deserves the same rigor as any production service: typed APIs, persistent jobs, security controls, tests, and documentation that respects your time.
 
 ## Why Open Source?
 
-We chose MIT licensing because web data extraction should be:
+| Principle | What it means for you |
+|-----------|----------------------|
+| **Transparent** | Read every line — scraping logic, security, exports |
+| **Extensible** | Add modes, hooks, exporters without asking permission |
+| **Community-driven** | Issues, PRs, and roadmap shaped by real users |
+| **Free forever** | MIT license — personal, commercial, enterprise |
 
-- **Transparent** — inspect every line of scraping, security, and export logic
-- **Extensible** — add modes, exporters, and integrations without vendor lock-in
-- **Community-driven** — real users filing issues, submitting PRs, and shaping the roadmap
+## What We Ship
 
-## Our Principles
+- **11 scrape modes** out of the box — not "build your own spider"
+- **Liquid glass dashboard** — because tools should be joy to use
+- **Security fortress** — SSRF, rate limits, robots.txt, optional API key
+- **39+ tests** — because "it works on my machine" isn't good enough
+- **Deploy anywhere** — Docker, Railway, Render, VPS — zero proprietary runtime
 
-1. **Polite by default** — robots.txt checks, rate limiting, and clear error messages
-2. **Security first** — SSRF protection, input validation, optional API key auth
-3. **Deploy anywhere** — Docker, Render, Railway, VPS — no proprietary runtime
-4. **Tests matter** — every mode has API and unit test coverage
-5. **Documentation is a feature** — guides, architecture diagrams, and deployment runbooks
+## How to Join
 
-## How to Contribute
+1. ⭐ [Star the repo](https://github.com/D1bakar/web-scraper) — helps others discover it
+2. Read [CONTRIBUTING.md](CONTRIBUTING.md)
+3. Pick an [open issue](https://github.com/D1bakar/web-scraper/issues) or propose a new mode
+4. Fork → branch → test → PR
 
-1. Read [CONTRIBUTING.md](CONTRIBUTING.md)
-2. Check [open issues](https://github.com/D1bakar/web-scraper/issues)
-3. Fork → branch → test → PR
-
-### Good First Issues
-
-Look for issues labeled `good first issue` or start with:
-- Adding a new scrape mode
-- Improving selector heuristics
-- Writing tests for edge cases
-- Documentation improvements
+Every merged PR lands you on [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## Code of Conduct
 
 We follow the [Contributor Covenant](.github/CODE_OF_CONDUCT.md). Be respectful, constructive, and inclusive.
 
+## Share the Revolution
+
+Built something cool with Web Scraper Pro? Share it — [docs/SOCIAL.md](docs/SOCIAL.md) has ready-made tweets and captions.
+
 ## License
 
-MIT — see [LICENSE](LICENSE). Use freely in personal, commercial, and enterprise projects.
-
-## Recognition
-
-Contributors are listed in [CONTRIBUTORS.md](CONTRIBUTORS.md). Every PR that lands gets you on the list.
+MIT — see [LICENSE](LICENSE).
 
 ---
 
 *Built with care by [D1bakar](https://github.com/D1bakar) and contributors worldwide.*
+
+**Extract the web. Instantly.**

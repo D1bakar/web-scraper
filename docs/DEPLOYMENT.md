@@ -12,7 +12,7 @@ Use these for load balancers, Docker healthchecks, and uptime monitors:
 |----------|---------|-------------------|
 | `GET /api/health/live` | **Liveness probe** (K8s/Docker) | `200` — `{"status":"alive"}` |
 | `GET /api/health/ready` | **Readiness probe** (DB connected) | `200` or `503` if DB down |
-| `GET /api/health` | Lightweight health check | `200` — `{"status":"healthy","version":"2.2.0"}` |
+| `GET /api/health` | Lightweight health check | `200` — `{"status":"healthy","version":"2.3.0"}` |
 | `GET /api/health/detail` | Full system dashboard data | `200` — uptime, active jobs, SSRF status |
 | `GET /api/stats` | Performance benchmarks | `200` — success rate, avg job duration |
 | `GET /` | Dashboard SPA (optional smoke test) | `200` — HTML |

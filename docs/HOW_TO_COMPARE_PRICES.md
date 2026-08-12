@@ -1,94 +1,97 @@
-# How to Compare Product Prices (e.g. iPhone)
+# How to Compare Prices
 
-This guide walks you through comparing prices across multiple websites using **Price Compare** mode in Web Scraper Pro.
-
----
-
-## What Price Compare does
-
-1. You paste product page URLs (one store listing per line).
-2. You tell the tool which CSS selector holds the price on those pages.
-3. It fetches each page politely, reads the price, and shows a comparison table sorted by price.
-
-**MVP limit:** up to **50 URLs per run**. For hundreds or thousands of sites, run multiple batches and combine exports in Excel or Google Sheets.
+**Extract the web. Instantly.** — This guide walks through Web Scraper Pro's **Price Compare** mode: compare product prices across up to 50 websites in a single job.
 
 ---
 
-## Step-by-step: compare iPhone prices
+## What You Get
 
-### 1. Open the dashboard
+- A **sorted comparison table** (lowest price first when numeric)
+- **CSV import** for bulk URL lists
+- **Smart selector hints** — heuristic CSS suggestions, no API key needed
+- **Animated bar chart** in the dashboard
+- **Export** as JSON, CSV, or Excel
 
-Start the app (`.\start.ps1` on Windows) and open **http://127.0.0.1:8000**.
+---
 
-### 2. Choose **Price Compare**
+## Step 1 — Launch the Dashboard
 
-It is the first option under **What do you want to do?**
-
-### 3. Paste product page URLs
-
-One URL per line — each should be a **product detail page**, not a search results page.
-
-Example:
-
-```
-https://store-a.example.com/iphone-16-pro-256gb
-https://store-b.example.com/products/iphone-16-pro
-https://store-c.example.com/phones/apple-iphone-16-pro
+```powershell
+cd web-scraper
+.\start.bat
 ```
 
-**Tip:** Click **Load example** first to try the built-in demo (books.toscrape.com practice site).
-
-### 4. Set the price CSS selector
-
-On any product page:
-
-1. **Right-click** the price → **Inspect**
-2. Find the HTML element that wraps the price (often a `<span>` with a class like `price` or `product-price`)
-3. Copy the class as a CSS selector, e.g. `.price` or `[itemprop="price"]`
-
-Paste that into **Step 2 — CSS selector for the price**.
-
-Leave it blank to let the tool try common selectors (`.price`, `[itemprop="price"]`, `.a-price`, etc.).
-
-### 5. Click **Compare Prices**
-
-Results appear in a table:
-
-| Website | Price | Status | Link |
-|---------|-------|--------|------|
-| store-a.example.com | $999.00 | OK | Open |
-| store-b.example.com | $1,049.00 | OK | Open |
-
-Rows with a parseable number are sorted **lowest first**.
-
-### 6. Export for larger comparisons
-
-- Click **CSV** or **Excel** to download results.
-- Run another batch of up to 50 URLs.
-- Paste all CSV files into one spreadsheet to compare 1000+ listings over time.
+Open **http://127.0.0.1:8000** → select **💰 Price Compare** from the mode grid.
 
 ---
 
-## Troubleshooting
+## Step 2 — Add Product URLs
 
-| Problem | What to try |
-|---------|-------------|
-| **Blocked by robots.txt** | Some retailers disallow scraping. Open **Settings** and uncheck robots check only if you are allowed to scrape that site. |
-| **No price found** | Wrong CSS selector — inspect the page again. Try a simpler selector like `.price`. |
-| **HTTP 403** | The site blocks automated requests. Try another retailer or use their official API. |
-| **Need 1000+ sites** | Run 20 batches of 50 URLs, export each run, merge in Excel. |
+Paste one product page URL per line:
 
----
+```
+https://store-a.com/product/iphone-16
+https://store-b.com/iphone-16-pro
+https://store-c.com/apple-iphone-16
+```
 
-## Responsible use
-
-- Check each site's **Terms of Service** and **robots.txt** before scraping.
-- Use reasonable delays (default: 1 second between requests).
-- Do not scrape login-only or paywalled prices without permission.
+**Tips:**
+- Use the **Try example** button for a safe demo on books.toscrape.com
+- **Import CSV** — first column should contain URLs (header row optional)
+- Maximum **50 URLs** per job
 
 ---
 
-## API (optional)
+## Step 3 — Set the Price Selector
+
+Enter the CSS selector that targets the price element on each page.
+
+| Example selector | When to use |
+|------------------|-------------|
+| `.price_color` | books.toscrape.com demo |
+| `.price` | Common class name |
+| `[itemprop="price"]` | schema.org markup |
+| `#product-price` | ID-based pricing |
+
+**Smart hints:** Click **✨ Smart hints** after entering a URL — the engine analyzes the page and suggests selectors with confidence scores.
+
+**How to find a selector manually:**
+1. Right-click the price on the product page
+2. Choose **Inspect**
+3. Copy the class or attribute (e.g. `.product-price`)
+
+---
+
+## Step 4 — Run the Comparison
+
+Click **Compare Prices** (or press `Ctrl+Enter`).
+
+Watch the **Live Status** panel for progress. When complete:
+- Results table sorted by price
+- **Bar chart** showing relative prices
+- **Share** or **Copy** buttons for your findings
+
+---
+
+## Step 5 — Export Results
+
+Use the export buttons above the results table:
+
+| Format | Best for |
+|--------|----------|
+| **JSON** | Pipelines and APIs |
+| **CSV** | Spreadsheets |
+| **Excel** | Reports and sharing |
+
+Or call the API directly:
+
+```bash
+curl "http://localhost:8000/api/jobs/{job_id}/export?format=csv"
+```
+
+---
+
+## API Example
 
 ```bash
 curl -X POST http://localhost:8000/api/jobs \
@@ -104,4 +107,23 @@ curl -X POST http://localhost:8000/api/jobs \
   }'
 ```
 
-Poll `GET /api/jobs/{job_id}` until `status` is `completed`, then fetch `GET /api/jobs/{job_id}/results`.
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| Empty prices | Verify CSS selector — use Smart hints |
+| `ROBOTS_BLOCKED` | Disable robots check in Settings, or use demo URLs |
+| Some sites fail | Normal for protected sites — check `status` and `error` columns |
+| Rate limited (429) | Increase delay in Settings |
+
+---
+
+## Ethics
+
+Always check **robots.txt** and Terms of Service. Use polite delays. Web Scraper Pro enforces robots.txt by default — that's a feature, not a bug.
+
+---
+
+**Next:** [WHY_DIFFERENT.md](WHY_DIFFERENT.md) · [DEPLOYMENT.md](DEPLOYMENT.md) · [README](../README.md)

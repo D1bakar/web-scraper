@@ -1,84 +1,112 @@
+<pre align="center">
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║   ⚡  W E B   S C R A P E R   P R O  ⚡                           ║
+║                                                                  ║
+║        E X T R A C T   T H E   W E B .   I N S T A N T L Y .     ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+</pre>
+
 <p align="center">
-  <strong>⚡ Web Scraper Pro</strong><br>
-  <em>Engineered for reliability at scale — API, dashboard, job queue, and exports in one deployable platform.</em>
+  <strong>The open-source scraper that makes BeautifulSoup scripts look prehistoric.</strong>
 </p>
 
 <p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
-  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg" alt="FastAPI"></a>
-  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED.svg" alt="Docker"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
-  <a href="https://github.com/D1bakar/web-scraper/actions/workflows/ci.yml"><img src="https://github.com/D1bakar/web-scraper/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
-  <a href="https://github.com/D1bakar/web-scraper/issues"><img src="https://img.shields.io/badge/contributors-welcome-brightgreen.svg" alt="Contributors Welcome"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+"></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License"></a>
+  <a href="https://github.com/D1bakar/web-scraper/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/D1bakar/web-scraper/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI Status"></a>
+  <a href="https://github.com/D1bakar/web-scraper/releases"><img src="https://img.shields.io/badge/version-2.3.0-blue?style=for-the-badge" alt="v2.3.0"></a>
+  <a href="https://github.com/D1bakar/web-scraper/stargazers"><img src="https://img.shields.io/github/stars/D1bakar/web-scraper?style=for-the-badge&logo=github&label=Stars" alt="GitHub Stars"></a>
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> ·
-  <a href="#api-reference">API</a> ·
-  <a href="docs/HOW_TO_COMPARE_PRICES.md">Compare Prices Guide</a> ·
-  <a href="docs/WHY_DIFFERENT.md">Why Different</a> ·
-  <a href="docs/WHY.md">Why Web Scraper Pro</a> ·
-  <a href="docs/DEPLOYMENT.md">Deployment</a> ·
-  <a href="docs/ROADMAP.md">Roadmap</a> ·
-  <a href="/api/docs">Live API Docs</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="#features">Features</a> ·
+  <a href="#why-its-different">Why Different</a> ·
+  <a href="docs/HOW_TO_COMPARE_PRICES.md">Price Compare</a> ·
+  <a href="/api/docs">API Docs</a> ·
+  <a href="docs/DEPLOYMENT.md">Deploy</a> ·
+  <a href="PRODUCT.md">Vision</a> ·
+  <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
 ---
 
-Web Scraper Pro transforms polite, structured web extraction into a **deployment-ready product**. Launch scrape jobs from a premium liquid-glass dashboard or REST API, track progress in real time, export results as JSON/CSV/Excel, and persist job history in SQLite — with robots.txt compliance, SSRF protection, rate limiting, and optional API key auth built in.
+## One line. One platform. Zero excuses.
 
-> **v2.2** — 5 revolutionary scrape modes (sitemap, emails, JSON-LD, social meta, readability), CSV bulk import, smart selector hints, performance stats, and deployment hyper-readiness.
+Deploy a **liquid glass dashboard**, **REST API**, **job queue**, and **11 extraction modes** in under 60 seconds. Track jobs in real time, export JSON/CSV/Excel, and sleep knowing SSRF protection, rate limits, and robots.txt compliance are built in.
+
+> **v2.3.0 — The Revolutionary Release:** viral-ready UI, screenshot-worthy dashboard, confetti on success, price compare bar charts, share buttons, and docs that hit different.
 
 ---
 
-## Feature Matrix (v2.2)
+## Dashboard Preview
 
-| Mode | Icon | Description |
-|------|------|-------------|
-| **Price Compare** | 💰 | Compare prices across up to 50 URLs + CSV import |
-| **Quotes Demo** | 📖 | Safe first-run demo (quotes.toscrape.com) |
-| **Page Metadata** | 🏷️ | Title, description, headings (+ batch CSV) |
-| **Link Extraction** | 🔗 | All hyperlinks with text |
-| **Table Extraction** | 📊 | HTML tables → structured rows |
-| **Custom Selectors** | 🎯 | CSS selector matching |
-| **Sitemap Crawl** | 🗺️ | Extract all URLs from sitemap.xml |
-| **Email Extract** | 📧 | Find emails on any page |
-| **JSON-LD** | 📦 | schema.org structured data |
-| **Social Meta** | 📱 | Open Graph + Twitter cards |
-| **Readability** | 📰 | Clean article text extraction |
+> **Screenshot placeholders** — replace with GIFs when you record demos.
 
-## Why Web Scraper Pro?
+| View | What you'll see |
+|------|-----------------|
+| **Hero overlay** | Full-screen intro — *"Extract the web. Instantly."* with floating orbs and iridescent glass |
+| **Mode grid** | 11 clickable mode cards with glow selection — not a boring dropdown |
+| **Live scrape** | Real-time progress bar, skeleton shimmer, morphing view transitions |
+| **Price compare** | Animated CSS bar chart ranking prices lowest → highest |
+| **Success moment** | Confetti pulse when your job completes — built for screenshots |
+| **Share row** | Copy results · Share on Twitter with pre-filled tweet |
 
-Most scraping tools are disposable scripts or heavyweight frameworks. Web Scraper Pro is a **deployable product** — engineered with the rigor of a research-grade data pipeline and the polish of a production SaaS:
-
-| You get | What it means |
-|---------|---------------|
-| **Liquid glass dashboard** | A premium SPA — not a bare HTML form |
-| **REST API + OpenAPI** | Integrate into pipelines without custom glue |
-| **Security built in** | SSRF protection, rate limiting, optional API key auth, CSP headers |
-| **Price Compare mode** | Compare product prices across multiple URLs in one job |
-| **Job queue + SQLite history** | Track, retry, and export long-running extractions |
-| **Docker + Procfile + CI** | Ship to Railway, Render, or any VPS in minutes |
-| **robots.txt compliance** | Polite defaults — delays, retries, automatic checks |
-
-**Not another BeautifulSoup tutorial.** See the full comparison: [docs/WHY_DIFFERENT.md](docs/WHY_DIFFERENT.md)
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ⚡ Web Scraper Pro          [New Scrape] [History] [Health] │
+│  ─────────────────────────────────────────────────────────  │
+│  ░░░ Liquid glass panels · animated gradient mesh ░░░       │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
+│  │💰 Price │ │📖 Quotes│ │🗺️ Sitemap│ │📧 Email │  ...      │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘           │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Live Status ████████████░░░░  78%                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  Powered by open source · MIT                               │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Features
 
-| Category | Highlights |
-|----------|------------|
-| **API** | Async FastAPI REST endpoints with OpenAPI at [`/api/docs`](#live-api-documentation) |
-| **UI** | Premium **liquid glass** dashboard — animated mesh background, frosted panels, fluid micro-animations |
-| **Modes** | **Price Compare** (featured), quotes demo, page metadata, links, tables, custom CSS selectors, **sitemap, email extract, JSON-LD, social meta, readability** |
-| **Jobs** | Async queue with SQLite WAL persistence, retry failed jobs, optional webhook on complete |
-| **Security** | SSRF protection, optional API key auth, rate limiting, CSP headers, input sanitization |
-| **Compliance** | Automatic robots.txt checks with graceful 403/429 error messages |
-| **Export** | JSON, CSV, Excel (openpyxl) download endpoints |
-| **Ops** | Health dashboard, Docker, env-based config, CI/CD pipeline |
-| **CLI** | Optional scripting interface via `cli.py` |
+| | Mode | What it does |
+|---|------|--------------|
+| 💰 | **Price Compare** | Compare prices across up to 50 URLs + CSV import + smart selector hints |
+| 📖 | **Quotes Demo** | Safe first-run demo — no URL needed |
+| 🏷️ | **Page Metadata** | Title, description, H1–H3 (+ batch CSV) |
+| 🔗 | **Link Extraction** | All hyperlinks with anchor text |
+| 📊 | **Table Extraction** | HTML tables → structured rows |
+| 🎯 | **Custom Selectors** | CSS selector matching with AI-style hints |
+| 🗺️ | **Sitemap Crawl** | Extract all URLs from sitemap.xml |
+| 📧 | **Email Extract** | Find emails in text + mailto links |
+| 📦 | **JSON-LD** | schema.org products, prices, ratings |
+| 📱 | **Social Meta** | Open Graph + Twitter Card metadata |
+| 📰 | **Readability** | Clean article text — strips nav & ads |
+
+**Plus:** REST API + OpenAPI · Job queue + SQLite history · JSON/CSV/Excel export · Webhooks · Docker · CI · 39+ tests · **Security fortress** (SSRF, rate limit, API key, CSP)
+
+---
+
+## Why It's Different
+
+| | DIY Script | Scrapy | Octoparse | **Web Scraper Pro** |
+|---|:---:|:---:|:---:|:---:|
+| Time to first scrape | Hours | Days | Minutes | **60 seconds** |
+| Dashboard UI | ❌ | ❌ | ✅ (SaaS) | **✅ Liquid glass** |
+| REST API + OpenAPI | DIY | Partial | Limited | **✅ Built-in** |
+| Price compare mode | DIY | DIY | Template | **✅ First-class** |
+| 11 extraction modes | ❌ | Templates | Visual | **✅ Out of the box** |
+| Self-hosted / MIT | ✅ | ✅ | ❌ | **✅** |
+| Security fortress | ❌ | Partial | Vendor | **✅ SSRF + rate limit** |
+| Screenshot-worthy | ❌ | ❌ | ❌ | **✅ Built for sharing** |
+
+Full breakdown → [docs/WHY_DIFFERENT.md](docs/WHY_DIFFERENT.md)
 
 ---
 
@@ -86,301 +114,131 @@ Most scraping tools are disposable scripts or heavyweight frameworks. Web Scrape
 
 ```mermaid
 flowchart TB
-    subgraph Client
-        UI[Dashboard UI]
-        CLI[CLI Tool]
-        API_Client[API Clients]
+    subgraph Client["Clients"]
+        UI["Liquid Glass Dashboard"]
+        CLI["CLI Tool"]
+        API_C["API Integrations"]
     end
 
-    subgraph FastAPI["FastAPI Application"]
-        Routes[API Routes]
-        Static[Static Files]
-        Jobs[Job Manager]
-        Scraper[Async Scraper]
+    subgraph App["FastAPI Application"]
+        Routes["REST Routes"]
+        Jobs["Job Queue Manager"]
+        Scraper["Async Scraper Engine"]
+        MW["Security Middleware"]
     end
 
-    subgraph Storage
-        SQLite[(SQLite DB)]
+    subgraph Data["Persistence"]
+        DB[("SQLite WAL")]
     end
 
-    subgraph External
-        Web[Target Websites]
-        Robots[robots.txt]
+    subgraph External["External"]
+        Sites["Target Websites"]
+        Robots["robots.txt"]
     end
 
     UI --> Routes
     CLI --> Scraper
-    API_Client --> Routes
-    Routes --> Jobs
+    API_C --> Routes
+    Routes --> MW
+    MW --> Jobs
     Jobs --> Scraper
-    Jobs --> SQLite
-    Scraper --> Web
+    Jobs --> DB
+    Scraper --> Sites
     Scraper --> Robots
-    Static --> UI
 ```
 
 ---
 
 ## Quick Start
 
-### Windows (PowerShell)
-
-Run from the `web-scraper` folder:
-
-```powershell
-cd web-scraper
-.\start.bat          # recommended — works when PowerShell scripts are blocked
-# or
-.\start.ps1
-```
-
-> **Windows tip:** If `.\start.ps1` fails with `PSSecurityException`, use `.\start.bat` or run `powershell -ExecutionPolicy Bypass -File .\start.ps1`.
-
-Or manually:
-
-```powershell
-cd web-scraper
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-### Linux / macOS
+Three commands. That's it.
 
 ```bash
-git clone https://github.com/D1bakar/web-scraper.git
-cd web-scraper
-
-python -m venv .venv
-source .venv/bin/activate
-
-pip install -r requirements.txt
-cp .env.example .env
-
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+git clone https://github.com/D1bakar/web-scraper.git && cd web-scraper
+python -m venv .venv && source .venv/bin/activate  # Windows: .\.venv\Scripts\activate
+pip install -r requirements.txt && cp .env.example .env && uvicorn app.main:app --reload
 ```
 
-Open **http://127.0.0.1:8000** for the dashboard, or **http://127.0.0.1:8000/api/docs** for interactive API documentation.
+**Windows:** run `.\start.bat` from the `web-scraper` folder — creates venv, installs deps, starts server.
 
-> **Compare product prices?** See the step-by-step guide: [docs/HOW_TO_COMPARE_PRICES.md](docs/HOW_TO_COMPARE_PRICES.md)
-
-> **Note:** Run `uvicorn` from inside the virtual environment. `requirements.txt` lives in `web-scraper/`, not the parent workspace.
-
-### Docker
-
-```bash
-docker compose up --build -d
-# Health: GET http://localhost:8000/api/health
-```
-
-### CLI (Optional)
-
-```bash
-python cli.py quotes --pages 3
-python cli.py meta --url https://quotes.toscrape.com
-python cli.py links --url https://quotes.toscrape.com
-python cli.py tables --url https://example.com
-```
+Open **http://127.0.0.1:8000** → click through the hero → pick a mode → hit **Try example** → watch the magic.
 
 ---
 
-## Dashboard Preview
+## Demo Video
 
-The built-in SPA features a **liquid glass** aesthetic with animated gradient mesh backgrounds, floating orbs, frosted glass panels with refractive highlights, and fluid micro-animations throughout.
+> **Coming soon** — 60-second walkthrough: hero → mode grid → price compare → confetti → export.
 
-| View | Description |
-|------|-------------|
-| **New Scrape** | Price Compare prominently featured; configure mode, URLs, selectors, and launch jobs |
-| **Job History** | Browse past jobs — view results, inspect errors, **retry failed jobs** |
-| **System Health** | Real-time status: uptime, active jobs, SSRF protection, rate limits, database |
-| **Settings** | Configure delay, timeout, retries, user-agent, robots.txt compliance |
-| **Results Export** | Download completed jobs as JSON, CSV, or Excel with search/filter |
+Subscribe to releases on GitHub to get notified when the demo drops.
 
 ---
 
-## Live API Documentation
+## Built for the Open Source Community
 
-| Endpoint | Description |
-|----------|-------------|
-| `/api/docs` | Swagger UI (interactive) |
-| `/api/redoc` | ReDoc reference |
-| `/api/openapi.json` | OpenAPI 3 schema |
+Web Scraper Pro is **MIT licensed** and **self-hosted by design**. No vendor lock-in. No surprise bills. Fork it, extend it, deploy it on Railway, Render, Docker, or your VPS.
+
+- [OPEN_SOURCE.md](OPEN_SOURCE.md) — manifesto & principles
+- [PRODUCT.md](PRODUCT.md) — vision & why it's revolutionary
+- [docs/SOCIAL.md](docs/SOCIAL.md) — tweets & captions for sharing
+- [CONTRIBUTING.md](CONTRIBUTING.md) — join the build
+- [CONTRIBUTORS.md](CONTRIBUTORS.md) — hall of fame
 
 ---
 
-## API Reference
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [PRODUCT.md](PRODUCT.md) | Vision & revolutionary positioning |
+| [docs/WHY_DIFFERENT.md](docs/WHY_DIFFERENT.md) | Comparison vs Scrapy, Octoparse, scripts |
+| [docs/HOW_TO_COMPARE_PRICES.md](docs/HOW_TO_COMPARE_PRICES.md) | Step-by-step price compare guide |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Railway, Render, production |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | What's next |
+| [docs/SOCIAL.md](docs/SOCIAL.md) | Share-ready tweets & captions |
+| [SECURITY.md](SECURITY.md) | Security model |
+| [CHANGELOG.md](CHANGELOG.md) | Release history |
+
+---
+
+## API at a Glance
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/health` | Health check for deployment |
-| `GET` | `/api/health/detail` | Detailed system status dashboard |
-| `GET` | `/api/settings` | Default scraping settings |
-| `POST` | `/api/jobs` | Create a scrape job |
-| `POST` | `/api/jobs/{id}/retry` | Retry a failed job |
-| `GET` | `/api/jobs` | List job history |
-| `GET` | `/api/jobs/{id}` | Get job status |
-| `GET` | `/api/jobs/{id}/results` | Get scrape results |
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/health/detail` | System dashboard data |
+| `POST` | `/api/jobs` | Create scrape job |
+| `GET` | `/api/jobs/{id}/results` | Fetch results |
 | `GET` | `/api/jobs/{id}/export?format=json\|csv\|xlsx` | Download export |
+| `GET` | `/api/selector-hints?url=...` | Smart CSS selector suggestions |
 
-### Create a Job
-
-```bash
-curl -X POST http://localhost:8000/api/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"mode": "meta", "url": "https://quotes.toscrape.com"}'
-```
-
-### Scrape Modes
-
-| Mode | Description | Required Fields |
-|------|-------------|-----------------|
-| `price_compare` | Compare product prices across multiple URLs (up to 50) | `urls`, optional `price_selector`, `product_label` |
-| `quotes` | Paginated quotes from quotes.toscrape.com | — |
-| `meta` | Page title, description, headings | `url` |
-| `links` | Anchor link extraction | `url` |
-| `tables` | HTML table extraction | `url` |
-| `selectors` | Custom CSS selector extraction | `url`, `selectors` |
+Interactive docs: **http://127.0.0.1:8000/api/docs**
 
 ---
 
-## Cloud Deployment
+## Contributors Welcome
 
-See the full guide: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+PRs, issues, and ideas make this project better. Look for `good first issue` labels or add a new scrape mode.
 
-### Railway / Render
-
-Use the included `Procfile`:
-
-```
-web: uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
-```
-
-Set environment variables from `.env.example`. Mount persistent storage for `DATABASE_URL` if you need durable job history.
-
-### Docker (Production)
-
-```bash
-docker build -t web-scraper-pro .
-docker run -p 8000:8000 -v scraper-data:/app/data web-scraper-pro
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENVIRONMENT` | `development` | Set to `production` for HSTS and strict CORS |
-| `HOST` | `0.0.0.0` | Server bind address |
-| `PORT` | `8000` | Server port |
-| `DATABASE_URL` | `sqlite:///./data/scraper.db` | SQLite database path |
-| `DEFAULT_DELAY` | `1.0` | Seconds between requests |
-| `DEFAULT_TIMEOUT` | `15` | Request timeout (seconds) |
-| `DEFAULT_RETRIES` | `3` | Retry attempts on failure |
-| `CHECK_ROBOTS_TXT` | `true` | Enforce robots.txt compliance |
-| `ALLOW_PRIVATE_URLS` | `false` | Allow scraping localhost/private IPs (dev only) |
-| `API_KEY` | — | Optional API key (requires `X-API-Key` header) |
-| `CORS_ORIGINS` | `*` | Comma-separated allowed origins (production) |
-| `RATE_LIMIT_PER_MINUTE` | `60` | API rate limit per IP |
-| `MAX_REQUEST_BODY_BYTES` | `1048576` | Max request body size (1 MB) |
-| `WEBHOOK_URL` | — | Optional webhook POST on job complete/fail |
-| `LOG_LEVEL` | `INFO` | Logging verbosity |
+1. Fork → branch → `pytest tests/ -v` → PR
+2. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT](.github/CODE_OF_CONDUCT.md)
 
 ---
 
-## Security
+## If This Saved You Hours, ⭐ the Repo
 
-Web Scraper Pro implements defense-in-depth security appropriate for a self-hosted scraping tool. See [SECURITY.md](SECURITY.md) for the full security model.
+Every star helps developers discover a better way to scrape. It takes one click and means the world.
 
-| Control | Description |
-|---------|-------------|
-| **SSRF Protection** | Blocks private/reserved IP ranges unless `ALLOW_PRIVATE_URLS=true` |
-| **API Key Auth** | Optional via `API_KEY` env — requires `X-API-Key` header |
-| **Rate Limiting** | Per-IP sliding window (default 60 req/min) |
-| **Security Headers** | CSP, X-Frame-Options, nosniff, HSTS in production |
-| **Input Validation** | URL, selector, and body size validation on all inputs |
-| **CORS** | Restricted to configured origins in production |
-| **SQLite WAL** | WAL mode + busy timeout for concurrent job safety |
+**[⭐ Star on GitHub](https://github.com/D1bakar/web-scraper/stargazers)**
 
-**Production checklist:**
-1. Set `ENVIRONMENT=production`
-2. Set a strong `API_KEY`
-3. Configure `CORS_ORIGINS` to your domain
-4. Place behind a reverse proxy with TLS
-5. Do not expose the dashboard publicly without auth
-
----
-
-## Project Structure
-
-```
-web-scraper/
-├── app/
-│   ├── main.py              # FastAPI entry point
-│   ├── api/routes.py        # REST API endpoints
-│   ├── core/
-│   │   ├── scraper.py       # Async scraping engine
-│   │   ├── jobs.py          # Job queue manager
-│   │   ├── robots.py        # robots.txt checker
-│   │   ├── exporters.py     # JSON/CSV/Excel export
-│   │   └── config.py        # Environment config
-│   ├── models/schemas.py    # Pydantic models
-│   ├── db/                  # SQLAlchemy models & session
-│   └── static/              # Dashboard UI (HTML/CSS/JS)
-├── docs/
-│   ├── WHY_DIFFERENT.md     # Comparison vs other scrapers
-│   ├── WHY.md               # Enterprise value proposition
-│   ├── DEPLOYMENT.md        # Docker, Railway, Render, VPS
-│   ├── ROADMAP.md           # Planned features (links to issues)
-│   └── HOW_TO_COMPARE_PRICES.md
-├── cli.py                   # Optional CLI
-├── tests/                   # pytest suite
-├── Dockerfile
-├── docker-compose.yml
-├── Procfile
-├── .github/workflows/ci.yml
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── LICENSE
-├── .env.example
-└── requirements.txt
-```
-
----
-
-## Development
-
-```bash
-pip install -r requirements-dev.txt
-ruff check app/ cli.py tests/
-pytest tests/ -v
-```
-
----
-
-## Contributing
-
-Contributions are welcome! Browse [open issues](https://github.com/D1bakar/web-scraper/issues) or read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, and pull request guidelines. See [CONTRIBUTORS.md](CONTRIBUTORS.md) for the project team.
-
----
-
-## Ethics & Responsible Scraping
-
-Web scraping carries real responsibility. This platform includes robots.txt compliance and polite defaults, but **you** are accountable for how it is used.
-
-- Check `robots.txt` and Terms of Service before scraping any site
-- Use configurable delays to avoid overloading servers
-- Respect rate limits and back off on errors
-- Do not scrape authenticated, paywalled, or prohibited content
+[![Star History Chart](https://api.star-history.com/svg?repos=D1bakar/web-scraper&type=Date)](https://star-history.com/#D1bakar/web-scraper&Date)
 
 ---
 
 ## License
 
-This project is released under the [MIT License](LICENSE).
-
----
+MIT — see [LICENSE](LICENSE). Use freely in personal, commercial, and enterprise projects.
 
 <p align="center">
-  <sub>Web Scraper Pro — enterprise-ready data extraction, engineered for clarity and responsible use.</sub><br>
-  <sub><a href="https://github.com/D1bakar/web-scraper">github.com/D1bakar/web-scraper</a></sub>
+  <strong>Web Scraper Pro</strong> — Extract the web. Instantly.<br>
+  <a href="https://github.com/D1bakar/web-scraper">github.com/D1bakar/web-scraper</a>
 </p>

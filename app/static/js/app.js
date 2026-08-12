@@ -155,6 +155,22 @@
   const MAX_COMPARE_URLS = 50;
 
   const SETTINGS_KEY = 'scraper_settings';
+  const HERO_KEY = 'wsp_hero_seen';
+  const REPO_URL = 'https://github.com/D1bakar/web-scraper';
+
+  const MODE_GRID = [
+    { value: 'price_compare', icon: '💰', label: 'Price Compare' },
+    { value: 'quotes', icon: '📖', label: 'Quotes Demo' },
+    { value: 'meta', icon: '🏷️', label: 'Metadata' },
+    { value: 'links', icon: '🔗', label: 'Links' },
+    { value: 'tables', icon: '📊', label: 'Tables' },
+    { value: 'selectors', icon: '🎯', label: 'Selectors' },
+    { value: 'sitemap', icon: '🗺️', label: 'Sitemap' },
+    { value: 'email_extract', icon: '📧', label: 'Emails' },
+    { value: 'json_ld', icon: '📦', label: 'JSON-LD' },
+    { value: 'social_meta', icon: '📱', label: 'Social Meta' },
+    { value: 'readability', icon: '📰', label: 'Readability' },
+  ];
 
   function loadSettings() {
     const defaults = {
@@ -228,6 +244,134 @@
         setTimeout(() => el.remove(), 300);
       }, 4000);
     });
+  }
+
+  function initHero() {
+    const overlay = $('#hero-overlay');
+    const btn = $('#hero-enter-btn');
+    if (!overlay) return;
+    if (localStorage.getItem(HERO_KEY)) {
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    btn?.addEventListener('click', dismissHero);
+  }
+
+  function dismissHero() {
+    localStorage.setItem(HERO_KEY, '1');
+    const overlay = $('#hero-overlay');
+    overlay?.classList.add('hidden');
+    overlay?.setAttribute('aria-hidden', 'true');
+  }
+
+  function renderModeGrid() {
+    const grid = $('#mode-grid');
+    const select = $('#mode');
+    if (!grid || !select) return;
+    grid.innerHTML = MODE_GRID.map(
+      (m) => `
+        <button type="button" class="mode-card${select.value === m.value ? ' active' : ''}"
+          data-mode="${m.value}" role="radio" aria-checked="${select.value === m.value}">
+          <span class="mode-card-icon">${m.icon}</span>
+          <span class="mode-card-label">${m.label}</span>
+        </button>
+      `
+    ).join('');
+    grid.querySelectorAll('.mode-card').forEach((card) => {
+      card.addEventListener('click', () => selectMode(card.dataset.mode));
+    });
+  }
+
+  function selectMode(mode) {
+    const select = $('#mode');
+    if (!select || select.value === mode) return;
+    select.value = mode;
+    select.dispatchEvent(new Event('change'));
+    renderModeGrid();
+  }
+
+  function confettiBurst() {
+    const container = $('#confetti-container');
+    if (!container) return;
+    const colors = ['#38bdf8', '#7c6ff7', '#ec4899', '#34d399', '#fbbf24'];
+    for (let i = 0; i < 40; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = `${Math.random() * 0.5}s`;
+      piece.style.animationDuration = `${1.5 + Math.random()}s`;
+      container.appendChild(piece);
+      setTimeout(() => piece.remove(), 3000);
+    }
+    const section = $('#results-section');
+    section?.classList.add('success-pulse');
+    setTimeout(() => section?.classList.remove('success-pulse'), 600);
+  }
+
+  function renderPriceChart(rows) {
+    const chartEl = $('#price-chart');
+    if (!chartEl) return;
+    const priced = rows.filter((r) => r.price_numeric != null && r.status === 'ok');
+    if (priced.length < 2) {
+      chartEl.classList.add('hidden');
+      chartEl.innerHTML = '';
+      return;
+    }
+    const maxPrice = Math.max(...priced.map((r) => r.price_numeric));
+    chartEl.classList.remove('hidden');
+    chartEl.innerHTML = `
+      <div class="price-chart-title">Price comparison</div>
+      ${priced
+        .slice(0, 10)
+        .map((r, i) => {
+          const pct = maxPrice > 0 ? (r.price_numeric / maxPrice) * 100 : 0;
+          let label = r.site_name || '';
+          if (!label && r.url) {
+            try { label = new URL(r.url).hostname.replace(/^www\./, ''); } catch { label = r.url; }
+          }
+          return `
+            <div class="price-bar-row">
+              <span class="price-bar-label" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
+              <div class="price-bar-track">
+                <div class="price-bar-fill" style="width:${pct}%;animation-delay:${i * 0.08}s"></div>
+              </div>
+              <span class="price-bar-value">${escapeHtml(String(r.price_text || r.price_numeric))}</span>
+            </div>
+          `;
+        })
+        .join('')}
+    `;
+  }
+
+  function formatResultsForCopy(rows, mode) {
+    if (mode === 'price_compare') {
+      return rows
+        .map((r) => `${r.site_name || r.url}\t${r.price_text || '—'}\t${r.status}`)
+        .join('\n');
+    }
+    return JSON.stringify(rows, null, 2);
+  }
+
+  async function copyResults() {
+    if (!resultsData.length) return toast('No results to copy', 'error');
+    const text = formatResultsForCopy(resultsData, currentJobMode);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Results copied to clipboard', 'success');
+    } catch {
+      toast('Could not copy — try export instead', 'error');
+    }
+  }
+
+  function shareOnTwitter() {
+    const count = resultsData.length;
+    const modeLabel = MODE_GRID.find((m) => m.value === currentJobMode)?.label || currentJobMode;
+    const text = encodeURIComponent(
+      `Just scraped ${count} result${count !== 1 ? 's' : ''} with Web Scraper Pro (${modeLabel}) ⚡\n\nExtract the web. Instantly.\n⭐ ${REPO_URL}`
+    );
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener,noreferrer,width=550,height=420');
   }
 
   function calcProgress(job) {
@@ -327,8 +471,12 @@
     submitText.textContent = cfg.submitLabel || 'Start Scraping';
   }
 
-  $('#mode').addEventListener('change', updateModeUI);
+  $('#mode').addEventListener('change', () => {
+    updateModeUI();
+    renderModeGrid();
+  });
   updateModeUI();
+  renderModeGrid();
 
   function loadExampleForMode(mode = $('#mode').value) {
     const cfg = MODE_CONFIG[mode];
@@ -675,6 +823,7 @@
         pollTimer = null;
         currentJobMode = job.mode;
         await loadResults(jobId);
+        confettiBurst();
         toast(`Scrape complete — ${job.total_items} items`, 'success');
       } else if (job.status === 'failed') {
         clearInterval(pollTimer);
@@ -982,6 +1131,11 @@
 
     $('#results-meta').classList.add('hidden');
     $('#results-table-wrap').classList.remove('hidden');
+    if (mode === 'price_compare') {
+      renderPriceChart(rows);
+    } else {
+      $('#price-chart')?.classList.add('hidden');
+    }
     renderResultsTable(rows, mode);
   }
 
@@ -1080,6 +1234,9 @@
     });
   });
 
+  $('#copy-results-btn')?.addEventListener('click', copyResults);
+  $('#share-twitter-btn')?.addEventListener('click', shareOnTwitter);
+
   // --- History ---
   async function loadHistory() {
     const tbody = $('#history-table tbody');
@@ -1158,6 +1315,7 @@
   // --- Init ---
   async function init() {
     try {
+      initHero();
       applySettingsToForm();
       checkHealth();
       setInterval(checkHealth, 30000);
