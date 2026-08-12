@@ -12,6 +12,7 @@ output/
 *.json
 *.xlsx
 !examples/sample_output.json
+!app/static/manifest.json
 .DS_Store
 Thumbs.db
 .pytest_cache/

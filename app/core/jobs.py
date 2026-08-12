@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.scraper import AsyncWebScraper, ScraperError
-from app.core.webhooks import notify_webhook
+from app.core.webhooks import dispatch_job_webhooks
 from app.db.database import safe_commit
 from app.db.models import JobRecord, ResultRecord, utcnow
 from app.models.schemas import JobStatus, ScrapeMode, ScrapeRequest
@@ -93,10 +93,11 @@ class JobManager:
     def get_job(self, db: Session, job_id: str) -> JobRecord | None:
         return db.query(JobRecord).filter(JobRecord.id == job_id).first()
 
-    def list_jobs(self, db: Session, limit: int = 50) -> list[JobRecord]:
+    def list_jobs(self, db: Session, limit: int = 50, offset: int = 0) -> list[JobRecord]:
         return (
             db.query(JobRecord)
             .order_by(JobRecord.created_at.desc())
+            .offset(offset)
             .limit(limit)
             .all()
         )
@@ -165,10 +166,10 @@ class JobManager:
             self._running[job.id] = task
 
     async def _run_job(self, job_id: str, request: ScrapeRequest) -> None:
-        from app.db.database import _SessionLocal
+        from app.db.database import get_session_factory
 
         async with self._semaphore:
-            db = _SessionLocal()
+            db = get_session_factory()()
             try:
                 job = self.get_job(db, job_id)
                 if not job:
@@ -281,14 +282,12 @@ class JobManager:
                 )
                 logger.info("Job %s completed with %d items", job_id, item_count)
 
-                if self.settings.webhook_url:
-                    await notify_webhook(
-                        self.settings.webhook_url,
-                        job_id=job_id,
-                        status=JobStatus.COMPLETED.value,
-                        mode=job.mode,
-                        item_count=item_count,
-                    )
+                await dispatch_job_webhooks(
+                    job_id=job_id,
+                    status=JobStatus.COMPLETED.value,
+                    mode=job.mode,
+                    item_count=item_count,
+                )
 
             except ScraperError as exc:
                 logger.error("Job %s failed: %s", job_id, exc)
@@ -301,14 +300,12 @@ class JobManager:
                         error=str(exc),
                         completed=True,
                     )
-                    if self.settings.webhook_url:
-                        await notify_webhook(
-                            self.settings.webhook_url,
-                            job_id=job_id,
-                            status=JobStatus.FAILED.value,
-                            mode=job.mode,
-                            error=str(exc),
-                        )
+                    await dispatch_job_webhooks(
+                        job_id=job_id,
+                        status=JobStatus.FAILED.value,
+                        mode=job.mode,
+                        error=str(exc),
+                    )
             except Exception as exc:
                 logger.exception("Job %s unexpected error", job_id)
                 job = self.get_job(db, job_id)
@@ -320,14 +317,12 @@ class JobManager:
                         error=f"Internal error: {exc}",
                         completed=True,
                     )
-                    if self.settings.webhook_url:
-                        await notify_webhook(
-                            self.settings.webhook_url,
-                            job_id=job_id,
-                            status=JobStatus.FAILED.value,
-                            mode=job.mode,
-                            error=str(exc),
-                        )
+                    await dispatch_job_webhooks(
+                        job_id=job_id,
+                        status=JobStatus.FAILED.value,
+                        mode=job.mode,
+                        error=str(exc),
+                    )
             finally:
                 db.close()
                 async with self._lock:

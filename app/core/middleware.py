@@ -11,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from app.core.auth import SESSION_COOKIE, auth_required, hash_api_key, verify_session_token
 from app.core.config import Settings
 
 logger = logging.getLogger(__name__)
@@ -138,24 +139,96 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
-    """Optional API key authentication via X-API-Key header."""
+    """Optional API key authentication via X-API-Key header (env or DB keys)."""
 
-    EXEMPT_PATHS = {"/api/health", "/api/docs", "/api/redoc", "/api/openapi.json"}
+    EXEMPT_PATHS = {
+        "/api/health",
+        "/api/health/live",
+        "/api/health/ready",
+        "/api/health/detail",
+        "/api/docs",
+        "/api/redoc",
+        "/api/openapi.json",
+        "/api/auth/login",
+        "/api/auth/status",
+    }
 
-    def __init__(self, app, api_key: str):
+    def __init__(self, app, api_key: str | None = None):
         super().__init__(app)
         self.api_key = api_key
+
+    def _db_key_valid(self, provided: str) -> bool:
+        if not provided:
+            return False
+        try:
+            from app.db.database import get_session_factory
+            from app.db.models import ApiKeyRecord
+
+            db = get_session_factory()()
+            try:
+                key_hash = hash_api_key(provided)
+                record = (
+                    db.query(ApiKeyRecord)
+                    .filter(ApiKeyRecord.key_hash == key_hash, ApiKeyRecord.revoked_at.is_(None))
+                    .first()
+                )
+                return record is not None
+            finally:
+                db.close()
+        except Exception:
+            return False
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if not request.url.path.startswith("/api/"):
             return await call_next(request)
 
-        if request.url.path in self.EXEMPT_PATHS:
+        if request.url.path in self.EXEMPT_PATHS or request.url.path.startswith("/api/auth/"):
             return await call_next(request)
 
         provided = request.headers.get("x-api-key", "")
-        if provided != self.api_key:
+        if self.api_key and provided == self.api_key:
+            request.state.api_key_valid = True
+            return await call_next(request)
+        if self._db_key_valid(provided):
+            request.state.api_key_valid = True
+            return await call_next(request)
+
+        if self.api_key:
             logger.warning("Unauthorized API access attempt from %s", request.client)
             return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
 
         return await call_next(request)
+
+
+class SessionAuthMiddleware(BaseHTTPMiddleware):
+    """Require admin session cookie when ADMIN_USER/PASSWORD are configured."""
+
+    EXEMPT_PATHS = {
+        "/api/health",
+        "/api/health/live",
+        "/api/health/ready",
+        "/api/health/detail",
+        "/api/docs",
+        "/api/redoc",
+        "/api/openapi.json",
+        "/api/auth/login",
+        "/api/auth/status",
+        "/api/settings",
+    }
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        if not auth_required():
+            return await call_next(request)
+        if not request.url.path.startswith("/api/"):
+            return await call_next(request)
+        if request.url.path in self.EXEMPT_PATHS or request.url.path.startswith("/api/auth/"):
+            return await call_next(request)
+
+        if getattr(request.state, "api_key_valid", False):
+            return await call_next(request)
+
+        token = request.cookies.get(SESSION_COOKIE)
+        if verify_session_token(token):
+            return await call_next(request)
+
+        return JSONResponse(status_code=401, content={"detail": "Authentication required"})

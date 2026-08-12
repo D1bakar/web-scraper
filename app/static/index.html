@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7c6ff7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <title>Web Scraper Pro — Extract the Web</title>
   <meta name="description" content="Extract the web. Instantly. Open-source scraper with liquid glass UI, 11 modes, price compare, and REST API.">
   <meta property="og:title" content="Web Scraper Pro — Extract the Web">
@@ -44,7 +50,7 @@
   </div>
 
   <div class="app">
-    <aside class="sidebar glass-panel">
+    <aside class="sidebar glass-panel" id="sidebar">
       <div class="brand">
         <div class="brand-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -81,6 +87,9 @@
     </aside>
 
     <main class="main">
+      <!-- Mobile dashboard quick stats -->
+      <div id="mobile-dashboard" class="mobile-dashboard hidden"></div>
+
       <!-- Scrape View -->
       <section id="view-scrape" class="view active">
         <header class="page-header fade-in">
@@ -240,6 +249,11 @@
               <tbody></tbody>
             </table>
           </div>
+          <div id="results-cards" class="results-cards hidden"></div>
+          <details id="raw-json-section" class="raw-json-section hidden">
+            <summary>Raw JSON</summary>
+            <pre id="raw-json-content" class="raw-json-content"></pre>
+          </details>
           <p id="results-count" class="results-count"></p>
         </div>
       </section>
@@ -251,7 +265,7 @@
           <p>Past scrape jobs — view results or retry failed jobs</p>
         </header>
         <div class="card glass-panel slide-up">
-          <div class="table-wrap">
+          <div class="table-wrap desktop-only" id="history-table-wrap">
             <table id="history-table">
               <thead>
                 <tr>
@@ -267,7 +281,17 @@
               <tbody></tbody>
             </table>
           </div>
+          <div id="history-cards" class="history-cards mobile-only"></div>
         </div>
+      </section>
+
+      <!-- Jobs View (mobile-friendly monitoring) -->
+      <section id="view-jobs" class="view">
+        <header class="page-header fade-in">
+          <h2>Jobs</h2>
+          <p>Active and recent scrape jobs</p>
+        </header>
+        <div id="jobs-dashboard" class="jobs-dashboard"></div>
       </section>
 
       <!-- Health Dashboard -->
@@ -292,6 +316,14 @@
           <p>Configure scraping defaults for new jobs</p>
         </header>
         <div class="card glass-panel settings-card slide-up">
+          <div class="settings-tabs" role="tablist">
+            <button type="button" class="settings-tab active" data-settings-tab="general">General</button>
+            <button type="button" class="settings-tab" data-settings-tab="schedules">Schedules</button>
+            <button type="button" class="settings-tab" data-settings-tab="webhooks">Webhooks</button>
+            <button type="button" class="settings-tab" data-settings-tab="apikeys">API Keys</button>
+          </div>
+
+          <div id="settings-general" class="settings-panel active">
           <form id="settings-form">
             <div class="form-row">
               <div class="form-group">
@@ -320,14 +352,145 @@
             <button type="submit" class="btn btn-primary">Save Settings</button>
             <p class="settings-note">Settings are stored locally and applied to new jobs.</p>
           </form>
+          </div>
+
+          <div id="settings-schedules" class="settings-panel hidden">
+            <div class="settings-panel-header">
+              <h3>Scheduled Jobs</h3>
+              <button type="button" class="btn btn-primary btn-sm" id="add-schedule-btn">+ New Schedule</button>
+            </div>
+            <div id="schedules-list" class="manage-list"></div>
+            <form id="schedule-form" class="manage-form hidden">
+              <div class="form-group">
+                <label for="schedule-name">Name</label>
+                <input type="text" id="schedule-name" required placeholder="Daily quotes scrape">
+              </div>
+              <div class="form-group">
+                <label for="schedule-mode">Mode</label>
+                <select id="schedule-mode">
+                  <option value="quotes">Quotes Demo</option>
+                  <option value="meta">Metadata</option>
+                  <option value="links">Links</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="schedule-frequency">Frequency</label>
+                <select id="schedule-frequency">
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <button type="submit" class="btn btn-primary btn-sm">Save Schedule</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="cancel-schedule-btn">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="settings-webhooks" class="settings-panel hidden">
+            <div class="settings-panel-header">
+              <h3>Webhooks</h3>
+              <button type="button" class="btn btn-primary btn-sm" id="add-webhook-btn">+ Add Webhook</button>
+            </div>
+            <div id="webhooks-list" class="manage-list"></div>
+            <form id="webhook-form" class="manage-form hidden">
+              <div class="form-group">
+                <label for="webhook-name">Name</label>
+                <input type="text" id="webhook-name" required placeholder="Slack notifications">
+              </div>
+              <div class="form-group">
+                <label for="webhook-url">URL</label>
+                <input type="url" id="webhook-url" required inputmode="url" placeholder="https://hooks.example.com/...">
+              </div>
+              <div class="form-row">
+                <button type="submit" class="btn btn-primary btn-sm">Save Webhook</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="cancel-webhook-btn">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="settings-apikeys" class="settings-panel hidden">
+            <div class="settings-panel-header">
+              <h3>API Keys</h3>
+              <button type="button" class="btn btn-primary btn-sm" id="create-apikey-btn">+ Generate Key</button>
+            </div>
+            <p class="settings-note">Keys are shown once on creation. Store them securely.</p>
+            <div id="apikeys-list" class="manage-list"></div>
+            <div id="apikey-reveal" class="apikey-reveal hidden"></div>
+          </div>
         </div>
+      </section>
+
+      <!-- More View -->
+      <section id="view-more" class="view">
+        <header class="page-header fade-in">
+          <h2>More</h2>
+          <p>System health, API docs, and account</p>
+        </header>
+        <div class="more-grid">
+          <button type="button" class="more-card glass-panel" data-goto="health">
+            <span class="more-icon">💎</span>
+            <span>System Health</span>
+          </button>
+          <a href="/api/docs" target="_blank" rel="noopener" class="more-card glass-panel">
+            <span class="more-icon">📖</span>
+            <span>API Docs</span>
+          </a>
+          <button type="button" class="more-card glass-panel" id="install-pwa-btn">
+            <span class="more-icon">📲</span>
+            <span>Install App</span>
+          </button>
+          <button type="button" class="more-card glass-panel hidden" id="logout-btn">
+            <span class="more-icon">🚪</span>
+            <span>Sign Out</span>
+          </button>
+        </div>
+        <div id="health-dashboard-more" class="health-grid hidden"></div>
       </section>
     </main>
 
-    <footer class="app-footer">
+    <footer class="app-footer desktop-only">
       <span class="oss-badge">⚡ Powered by open source · MIT</span>
       <a href="https://github.com/D1bakar/web-scraper" target="_blank" rel="noopener">GitHub</a>
     </footer>
+  </div>
+
+  <!-- Mobile bottom navigation -->
+  <nav class="bottom-nav mobile-only" id="bottom-nav" aria-label="Main navigation">
+    <button type="button" class="bottom-nav-item active" data-view="scrape" aria-label="New Scrape">
+      <span class="bottom-nav-icon">⚡</span>
+      <span class="bottom-nav-label">New Scrape</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view="jobs" aria-label="Jobs">
+      <span class="bottom-nav-icon">📡</span>
+      <span class="bottom-nav-label">Jobs</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view="history" aria-label="History">
+      <span class="bottom-nav-icon">📋</span>
+      <span class="bottom-nav-label">History</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view="settings" aria-label="Settings">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">Settings</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view="more" aria-label="More">
+      <span class="bottom-nav-icon">⋯</span>
+      <span class="bottom-nav-label">More</span>
+    </button>
+  </nav>
+
+  <div id="bottom-sheet" class="bottom-sheet hidden" aria-hidden="true">
+    <div class="bottom-sheet-backdrop"></div>
+    <div class="bottom-sheet-panel glass-panel">
+      <div class="bottom-sheet-handle"></div>
+      <div id="bottom-sheet-content"></div>
+    </div>
+  </div>
+
+  <div id="pwa-install-banner" class="pwa-install-banner hidden">
+    <span>Install Web Scraper Pro for quick access</span>
+    <button type="button" class="btn btn-primary btn-sm" id="pwa-install-btn">Install</button>
+    <button type="button" class="btn btn-ghost btn-sm" id="pwa-dismiss-btn">✕</button>
   </div>
 
   <div id="confetti-container" aria-hidden="true"></div>

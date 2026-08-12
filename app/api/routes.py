@@ -314,10 +314,14 @@ async def retry_job(
 @router.get("/jobs", response_model=JobListResponse, tags=["Jobs"])
 def list_jobs(
     limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    mobile: bool = Query(default=False),
     db: Session = Depends(get_db),
 ) -> JobListResponse:
-    jobs = job_manager.list_jobs(db, limit=limit)
-    return JobListResponse(jobs=[_job_to_response(j) for j in jobs], total=len(jobs))
+    effective_limit = min(limit, 10) if mobile else limit
+    jobs = job_manager.list_jobs(db, limit=effective_limit, offset=offset)
+    total = db.query(JobRecord).count()
+    return JobListResponse(jobs=[_job_to_response(j) for j in jobs], total=total)
 
 
 @router.get("/jobs/{job_id}", response_model=JobResponse, tags=["Jobs"])

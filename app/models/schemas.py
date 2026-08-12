@@ -226,3 +226,90 @@ class StatsResponse(BaseModel):
     active_jobs: int
     uptime_seconds: float
     by_mode: list[ModeStats]
+
+
+class DashboardSummaryResponse(BaseModel):
+    active_jobs: int
+    total_jobs: int
+    success_rate: float
+    recent_jobs: list[JobResponse]
+    active_job_list: list[JobResponse]
+
+
+class ApiKeyResponse(BaseModel):
+    id: str
+    name: str
+    key_prefix: str
+    created_at: datetime
+
+
+class ApiKeyCreateResponse(ApiKeyResponse):
+    api_key: str
+
+
+class ScheduleCreateRequest(BaseModel):
+    name: str = Field(max_length=128)
+    mode: ScrapeMode
+    config: dict[str, Any] = Field(default_factory=dict)
+    frequency: str = Field(default="hourly", pattern="^(hourly|daily|interval)$")
+    interval_minutes: int | None = Field(default=None, ge=1, le=10080)
+
+
+class ScheduleUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, max_length=128)
+    enabled: bool | None = None
+    frequency: str | None = Field(default=None, pattern="^(hourly|daily|interval)$")
+    interval_minutes: int | None = Field(default=None, ge=1, le=10080)
+    config: dict[str, Any] | None = None
+
+
+class ScheduleResponse(BaseModel):
+    id: str
+    name: str
+    mode: str
+    config: dict[str, Any]
+    frequency: str
+    interval_minutes: int | None
+    enabled: bool
+    last_run: datetime | None
+    next_run: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class WebhookCreateRequest(BaseModel):
+    name: str = Field(max_length=128)
+    url: HttpUrl
+    events: list[str] = Field(default_factory=lambda: ["job.completed", "job.failed"])
+    enabled: bool = True
+
+
+class WebhookResponse(BaseModel):
+    id: str
+    name: str
+    url: str
+    events: list[str]
+    enabled: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class WebhookTestResponse(BaseModel):
+    success: bool
+    status_code: int | None = None
+    error: str | None = None
+
+
+class WebhookDeliveryResponse(BaseModel):
+    id: int
+    webhook_id: str
+    job_id: str | None
+    event: str
+    status_code: int | None
+    success: bool
+    error: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

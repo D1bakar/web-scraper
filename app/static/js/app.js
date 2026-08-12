@@ -156,7 +156,83 @@
 
   const SETTINGS_KEY = 'scraper_settings';
   const HERO_KEY = 'wsp_hero_seen';
+  const DRAFT_KEY = 'wsp_form_draft';
+  const PWA_DISMISS_KEY = 'wsp_pwa_dismiss';
   const REPO_URL = 'https://github.com/D1bakar/web-scraper';
+
+  let jobStartTime = null;
+  let deferredInstallPrompt = null;
+  let wasOffline = false;
+
+  function isMobile() {
+    return window.matchMedia('(max-width: 767px)').matches;
+  }
+
+  async function apiFetch(url, options = {}) {
+    const headers = { ...apiHeaders(), ...(options.headers || {}) };
+    return fetch(url, { credentials: 'include', ...options, headers });
+  }
+
+  function saveFormDraft() {
+    try {
+      const draft = {
+        mode: $('#mode')?.value,
+        url: $('#url')?.value,
+        compareUrls: $('#compare-urls')?.value,
+        priceSelector: $('#price-selector')?.value,
+        productLabel: $('#product-label')?.value,
+        selectors: $('#selectors')?.value,
+        maxPages: $('#max-pages')?.value,
+      };
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch { /* ignore */ }
+  }
+
+  function restoreFormDraft() {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.mode) { $('#mode').value = draft.mode; updateModeUI(); renderModeGrid(); }
+      if (draft.url) $('#url').value = draft.url;
+      if (draft.compareUrls) $('#compare-urls').value = draft.compareUrls;
+      if (draft.priceSelector) $('#price-selector').value = draft.priceSelector;
+      if (draft.productLabel) $('#product-label').value = draft.productLabel;
+      if (draft.selectors) $('#selectors').value = draft.selectors;
+      if (draft.maxPages) $('#max-pages').value = draft.maxPages;
+    } catch { /* ignore */ }
+  }
+
+  ['input', 'change'].forEach((evt) => {
+    document.addEventListener(evt, (e) => {
+      if (e.target.closest('#scrape-form')) saveFormDraft();
+    });
+  });
+
+  function formatElapsed(startIso) {
+    if (!startIso) return '';
+    const sec = Math.floor((Date.now() - new Date(startIso).getTime()) / 1000);
+    if (sec < 60) return `${sec}s elapsed`;
+    return `${Math.floor(sec / 60)}m ${sec % 60}s elapsed`;
+  }
+
+  function navigateToView(view) {
+    $$('.nav-item, .bottom-nav-item').forEach((b) => {
+      b.classList.toggle('active', b.dataset.view === view);
+    });
+    $$('.view').forEach((v) => {
+      v.classList.remove('active', 'view-exit');
+      if (v.id === `view-${view}`) {
+        v.classList.add('active', 'view-enter');
+        setTimeout(() => v.classList.remove('view-enter'), 300);
+      }
+    });
+    if (view === 'history') loadHistory();
+    if (view === 'health' || view === 'more') loadHealthDashboard();
+    if (view === 'jobs') loadJobsDashboard();
+    if (view === 'settings') loadSettingsPanels();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   const MODE_GRID = [
     { value: 'price_compare', icon: '💰', label: 'Price Compare' },
@@ -397,22 +473,12 @@
   });
 
   // --- Navigation with transitions ---
-  $$('.nav-item').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      $$('.nav-item').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      const view = btn.dataset.view;
-      $$('.view').forEach((v) => {
-        v.classList.remove('active');
-        v.classList.add('view-exit');
-      });
-      const target = $(`#view-${view}`);
-      target.classList.remove('view-exit');
-      target.classList.add('active', 'view-enter');
-      setTimeout(() => target.classList.remove('view-enter'), 300);
-      if (view === 'history') loadHistory();
-      if (view === 'health') loadHealthDashboard();
-    });
+  $$('.nav-item, .bottom-nav-item').forEach((btn) => {
+    btn.addEventListener('click', () => navigateToView(btn.dataset.view));
+  });
+
+  $$('[data-goto]').forEach((btn) => {
+    btn.addEventListener('click', () => navigateToView(btn.dataset.goto));
   });
 
   // --- Mode toggles ---
@@ -814,13 +880,14 @@
   // --- Job polling ---
   function startPolling(jobId) {
     if (pollTimer) clearInterval(pollTimer);
+    jobStartTime = Date.now();
     pollLiveStatus(jobId);
     pollTimer = setInterval(() => pollLiveStatus(jobId), 1500);
   }
 
   async function pollLiveStatus(jobId) {
     try {
-      const res = await fetch(`${API}/jobs/${jobId}`, { headers: apiHeaders() });
+      const res = await apiFetch(`${API}/jobs/${jobId}`);
       if (!res.ok) return;
       const job = await res.json();
       renderLiveStatus(job);
@@ -841,6 +908,7 @@
       }
     } catch (err) {
       console.error('Poll error:', err);
+      if (!navigator.onLine) toast('Connection lost — will retry when back online', 'error');
     }
   }
 
@@ -856,26 +924,33 @@
     }[job.status] || '';
 
     const progress = calcProgress(job);
+    const elapsed = formatElapsed(job.created_at);
+    const pagesLabel = job.mode === 'price_compare'
+      ? `${job.progress}% URLs processed`
+      : job.progress > 0 ? `${job.progress} pages` : '';
 
     el.innerHTML = `
       <div class="status-active">
-        <div class="status-row">
-          <span class="status-label">Job ID</span>
-          <span class="status-value job-id">${job.id.slice(0, 8)}...</span>
-        </div>
-        <div class="status-row">
-          <span class="status-label">Mode</span>
-          <span class="status-value">${job.mode}</span>
-        </div>
-        <div class="status-row">
-          <span class="status-label">Status</span>
-          <span class="status-value ${statusClass} status-indicator">${job.status.toUpperCase()}</span>
-        </div>
-        <div class="status-row">
-          <span class="status-label">Items</span>
-          <span class="status-value">${job.total_items}</span>
-        </div>
-        ${job.error ? `<div class="status-row"><span class="status-label">Error</span><span class="status-value status-failed">${escapeHtml(formatJobError(job.error))}</span></div>` : ''}
+        <details class="job-detail-section" open>
+          <summary>Status — ${job.status.toUpperCase()}</summary>
+          <div class="section-body">
+            <div class="status-row">
+              <span class="status-label">Job ID</span>
+              <span class="status-value job-id">${job.id.slice(0, 8)}...</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Mode</span>
+              <span class="status-value">${job.mode}</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Items</span>
+              <span class="status-value">${job.total_items}</span>
+            </div>
+            ${pagesLabel ? `<div class="status-row"><span class="status-label">Progress</span><span class="status-value">${pagesLabel}</span></div>` : ''}
+            ${elapsed ? `<p class="elapsed-time">${elapsed}</p>` : ''}
+          </div>
+        </details>
+        ${job.error ? `<details class="job-detail-section"><summary>Error</summary><div class="section-body"><span class="status-value status-failed">${escapeHtml(formatJobError(job.error))}</span></div></details>` : ''}
         ${job.error && job.error.includes('ROBOTS_BLOCKED') ? `<div class="robots-help">Tip: Open <strong>Settings</strong> and uncheck "Check robots.txt", or use <strong>Quotes Demo</strong> mode.</div>` : ''}
         ${job.status === 'failed' ? `<button class="btn btn-retry btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.__retryJob('${job.id}')">↻ Retry Job</button>` : ''}
         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
@@ -1144,6 +1219,54 @@
       $('#price-chart')?.classList.add('hidden');
     }
     renderResultsTable(rows, mode);
+    renderResultsCards(rows, mode);
+    updateRawJson(rows);
+  }
+
+  function renderResultsCards(rows, mode) {
+    const cardsEl = $('#results-cards');
+    if (!cardsEl) return;
+    if (!isMobile() || !rows.length || ['meta', 'social_meta', 'readability'].includes(mode)) {
+      cardsEl.classList.add('hidden');
+      cardsEl.innerHTML = '';
+      return;
+    }
+    const cfg = MODE_CONFIG[mode] || {};
+    let keys = cfg.columns ? Object.keys(cfg.columns) : Object.keys(rows[0] || {});
+    if (mode === 'price_compare') keys = keys.filter((k) => k !== 'product_label' && k !== 'price_numeric');
+
+    cardsEl.classList.remove('hidden');
+    cardsEl.innerHTML = rows.map((row, idx) => `
+      <div class="result-card">
+        <div class="result-card-row"><span class="result-card-label">#</span><span class="result-card-value">${idx + 1}</span></div>
+        ${keys.map((k) => {
+          const val = flatten(row[k]);
+          return `<div class="result-card-row">
+            <span class="result-card-label">${escapeHtml(getColumnLabel(mode, k))}</span>
+            <span class="result-card-value">${escapeHtml(String(val)).slice(0, 200)}</span>
+            <button type="button" class="copy-field-btn" data-copy="${escapeHtml(String(val))}" aria-label="Copy">📋</button>
+          </div>`;
+        }).join('')}
+      </div>
+    `).join('');
+
+    cardsEl.querySelectorAll('[data-copy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.copy);
+          toast('Copied', 'success');
+        } catch { toast('Copy failed', 'error'); }
+      });
+    });
+  }
+
+  function updateRawJson(rows) {
+    const section = $('#raw-json-section');
+    const content = $('#raw-json-content');
+    if (!section || !content) return;
+    if (!rows.length) { section.classList.add('hidden'); return; }
+    section.classList.remove('hidden');
+    content.textContent = JSON.stringify(rows, null, 2);
   }
 
   function renderResultsTable(rows, mode) {
@@ -1247,42 +1370,109 @@
   // --- History ---
   async function loadHistory() {
     const tbody = $('#history-table tbody');
-    tbody.innerHTML = '<tr><td colspan="7"><div class="skeleton skeleton-line"></div></td></tr>';
+    const cardsEl = $('#history-cards');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7"><div class="skeleton skeleton-line"></div></td></tr>';
+    if (cardsEl) cardsEl.innerHTML = '<div class="skeleton skeleton-line"></div>';
     try {
-      const res = await fetch(`${API}/jobs?limit=50`, { headers: apiHeaders() });
+      const mobileParam = isMobile() ? '&mobile=true' : '';
+      const res = await apiFetch(`${API}/jobs?limit=50${mobileParam}`);
       const data = await res.json();
-      const tbody = $('#history-table tbody');
 
       if (!data.jobs.length) {
-        tbody.innerHTML =
-          '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No jobs yet</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No jobs yet</td></tr>';
+        if (cardsEl) cardsEl.innerHTML = '<p style="text-align:center;color:var(--text-muted)">No jobs yet</p>';
         return;
       }
 
-      tbody.innerHTML = data.jobs
-        .map(
-          (job) => `
-        <tr>
-          <td class="job-id">${job.id.slice(0, 8)}...</td>
-          <td>${job.mode}</td>
-          <td title="${escapeHtml(job.url || '—')}">${truncate(job.url || '—', 40)}</td>
-          <td><span class="badge badge-${job.status === 'completed' ? 'healthy' : job.status === 'failed' ? 'error' : 'pending'}">${job.status}</span></td>
-          <td>${job.total_items}</td>
-          <td>${formatDate(job.created_at)}</td>
-          <td>
-            <div class="history-actions">
-              ${job.status === 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')">View</button>` : ''}
-              ${job.status === 'failed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')" title="${escapeHtml(formatJobError(job.error || ''))}">Details</button>` : ''}
-              ${job.status === 'failed' ? `<button class="btn btn-retry btn-sm" onclick="window.__retryJob('${job.id}')">↻ Retry</button>` : ''}
-            </div>
-          </td>
-        </tr>
-      `
-        )
-        .join('');
+      if (tbody) {
+        tbody.innerHTML = data.jobs.map((job) => historyRowHtml(job)).join('');
+      }
+      if (cardsEl) {
+        cardsEl.innerHTML = data.jobs.map((job) => historyCardHtml(job)).join('');
+      }
     } catch {
       toast('Failed to load history', 'error');
     }
+  }
+
+  function historyRowHtml(job) {
+    return `
+      <tr>
+        <td class="job-id">${job.id.slice(0, 8)}...</td>
+        <td>${job.mode}</td>
+        <td title="${escapeHtml(job.url || '—')}">${truncate(job.url || '—', 40)}</td>
+        <td><span class="badge badge-${job.status === 'completed' ? 'healthy' : job.status === 'failed' ? 'error' : 'pending'}">${job.status}</span></td>
+        <td>${job.total_items}</td>
+        <td>${formatDate(job.created_at)}</td>
+        <td><div class="history-actions">${historyActionsHtml(job)}</div></td>
+      </tr>`;
+  }
+
+  function historyCardHtml(job) {
+    return `
+      <div class="history-card">
+        <div class="history-card-header">
+          <strong>${job.mode}</strong>
+          <span class="badge badge-${job.status === 'completed' ? 'healthy' : job.status === 'failed' ? 'error' : 'pending'}">${job.status}</span>
+        </div>
+        <div class="result-card-row"><span class="result-card-label">ID</span><span class="result-card-value">${job.id.slice(0, 8)}…</span></div>
+        <div class="result-card-row"><span class="result-card-label">Items</span><span class="result-card-value">${job.total_items}</span></div>
+        <div class="result-card-row"><span class="result-card-label">When</span><span class="result-card-value">${formatDate(job.created_at)}</span></div>
+        <div class="history-card-actions">${historyActionsHtml(job)}</div>
+      </div>`;
+  }
+
+  function historyActionsHtml(job) {
+    return `
+      ${job.status === 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')">View</button>` : ''}
+      ${job.status === 'failed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')">Details</button>` : ''}
+      ${job.status === 'failed' ? `<button class="btn btn-retry btn-sm" onclick="window.__retryJob('${job.id}')">↻ Retry</button>` : ''}`;
+  }
+
+  async function loadJobsDashboard() {
+    const el = $('#jobs-dashboard');
+    if (!el) return;
+    el.innerHTML = '<div class="skeleton skeleton-line"></div>';
+    try {
+      const res = await apiFetch(`${API}/dashboard/summary?mobile=true`);
+      const data = await res.json();
+      const jobs = data.recent_jobs || [];
+      if (!jobs.length) {
+        el.innerHTML = '<p style="color:var(--text-muted);text-align:center">No jobs yet — start a scrape!</p>';
+        return;
+      }
+      el.innerHTML = jobs.map((job) => `
+        <div class="job-card glass-panel">
+          <div class="job-card-header">
+            <strong>${job.mode}</strong>
+            <span class="badge badge-${job.status === 'completed' ? 'healthy' : job.status === 'failed' ? 'error' : 'pending'}">${job.status}</span>
+          </div>
+          <div class="result-card-row"><span class="result-card-label">Items</span><span class="result-card-value">${job.total_items}</span></div>
+          <div class="result-card-row"><span class="result-card-label">Progress</span><span class="result-card-value">${job.progress}%</span></div>
+          <p class="elapsed-time">${formatElapsed(job.created_at)}</p>
+          <div class="job-card-actions">${historyActionsHtml(job)}</div>
+        </div>
+      `).join('');
+    } catch {
+      el.innerHTML = '<p style="color:var(--error)">Failed to load jobs</p>';
+    }
+  }
+
+  async function loadMobileDashboard() {
+    const el = $('#mobile-dashboard');
+    if (!el || !isMobile()) { el?.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    try {
+      const res = await apiFetch(`${API}/dashboard/summary?mobile=true`);
+      const data = await res.json();
+      el.innerHTML = `
+        <button type="button" class="btn btn-primary btn-glow mobile-cta" onclick="navigateToView('scrape')">⚡ NEW SCRAPE</button>
+        <div class="mobile-stat-card"><div class="mobile-stat-value">${data.active_jobs}</div><div class="mobile-stat-label">Active</div></div>
+        <div class="mobile-stat-card"><div class="mobile-stat-value">${data.total_jobs}</div><div class="mobile-stat-label">Total Jobs</div></div>
+        <div class="mobile-stat-card"><div class="mobile-stat-value">${data.success_rate}%</div><div class="mobile-stat-label">Success</div></div>
+      `;
+      window.navigateToView = navigateToView;
+    } catch { el.classList.add('hidden'); }
   }
 
   function truncate(str, len) {
@@ -1294,17 +1484,216 @@
   }
 
   window.__viewJob = async (jobId) => {
-    $$('.nav-item').forEach((b) => b.classList.remove('active'));
-    $$('.nav-item')[0].classList.add('active');
-    $$('.view').forEach((v) => v.classList.remove('active'));
-    $('#view-scrape').classList.add('active');
+    navigateToView('scrape');
     currentJobId = jobId;
-    const res = await fetch(`${API}/jobs/${jobId}`, { headers: apiHeaders() });
+    const res = await apiFetch(`${API}/jobs/${jobId}`);
     const job = await res.json();
     currentJobMode = job.mode;
     renderLiveStatus(job);
     if (job.status === 'completed') await loadResults(jobId);
   };
+
+  // --- Settings tabs & management ---
+  $$('.settings-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      $$('.settings-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.settings-panel').forEach((p) => p.classList.remove('active'));
+      $(`#settings-${tab.dataset.settingsTab}`)?.classList.add('active');
+      loadSettingsPanels();
+    });
+  });
+
+  async function loadSettingsPanels() {
+    await Promise.all([loadSchedules(), loadWebhooks(), loadApiKeys()]);
+  }
+
+  async function loadSchedules() {
+    const el = $('#schedules-list');
+    if (!el) return;
+    try {
+      const res = await apiFetch(`${API}/schedules`);
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map((s) => `
+        <div class="manage-item">
+          <div><strong>${escapeHtml(s.name)}</strong><br><small>${s.mode} · ${s.frequency}${s.enabled ? '' : ' (paused)'}</small></div>
+          <div class="manage-item-actions">
+            <button class="btn btn-ghost btn-sm" onclick="window.__toggleSchedule('${s.id}', ${!s.enabled})">${s.enabled ? 'Pause' : 'Resume'}</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.__deleteSchedule('${s.id}')">Delete</button>
+          </div>
+        </div>
+      `).join('') : '<p class="settings-note">No schedules yet</p>';
+    } catch { el.innerHTML = '<p class="settings-note">Could not load schedules</p>'; }
+  }
+
+  async function loadWebhooks() {
+    const el = $('#webhooks-list');
+    if (!el) return;
+    try {
+      const res = await apiFetch(`${API}/webhooks`);
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map((w) => `
+        <div class="manage-item">
+          <div><strong>${escapeHtml(w.name)}</strong><br><small>${escapeHtml(w.url).slice(0, 40)}…</small></div>
+          <div class="manage-item-actions">
+            <button class="btn btn-ghost btn-sm" onclick="window.__testWebhook('${w.id}')">Test</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.__deleteWebhook('${w.id}')">Delete</button>
+          </div>
+        </div>
+      `).join('') : '<p class="settings-note">No webhooks yet</p>';
+    } catch { el.innerHTML = '<p class="settings-note">Could not load webhooks</p>'; }
+  }
+
+  async function loadApiKeys() {
+    const el = $('#apikeys-list');
+    if (!el) return;
+    try {
+      const res = await apiFetch(`${API}/api-keys`);
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map((k) => `
+        <div class="manage-item">
+          <div><strong>${escapeHtml(k.name)}</strong><br><small>${k.key_prefix}</small></div>
+          <button class="btn btn-ghost btn-sm" onclick="window.__revokeApiKey('${k.id}')">Revoke</button>
+        </div>
+      `).join('') : '<p class="settings-note">No API keys yet</p>';
+    } catch { el.innerHTML = '<p class="settings-note">Could not load API keys</p>'; }
+  }
+
+  $('#add-schedule-btn')?.addEventListener('click', () => {
+    $('#schedule-form')?.classList.remove('hidden');
+  });
+  $('#cancel-schedule-btn')?.addEventListener('click', () => {
+    $('#schedule-form')?.classList.add('hidden');
+  });
+  $('#schedule-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const mode = $('#schedule-mode').value;
+      const config = mode === 'quotes' ? { max_pages: 1, check_robots: false } : {};
+      const res = await apiFetch(`${API}/schedules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: $('#schedule-name').value,
+          mode,
+          frequency: $('#schedule-frequency').value,
+          config,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+      toast('Schedule created', 'success');
+      $('#schedule-form')?.classList.add('hidden');
+      loadSchedules();
+    } catch (err) { toast(err.message, 'error'); }
+  });
+
+  $('#add-webhook-btn')?.addEventListener('click', () => $('#webhook-form')?.classList.remove('hidden'));
+  $('#cancel-webhook-btn')?.addEventListener('click', () => $('#webhook-form')?.classList.add('hidden'));
+  $('#webhook-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const res = await apiFetch(`${API}/webhooks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: $('#webhook-name').value, url: $('#webhook-url').value }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+      toast('Webhook added', 'success');
+      $('#webhook-form')?.classList.add('hidden');
+      loadWebhooks();
+    } catch (err) { toast(err.message, 'error'); }
+  });
+
+  $('#create-apikey-btn')?.addEventListener('click', async () => {
+    try {
+      const res = await apiFetch(`${API}/api-keys?name=Mobile+Key`, { method: 'POST' });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+      const data = await res.json();
+      const reveal = $('#apikey-reveal');
+      reveal.classList.remove('hidden');
+      reveal.innerHTML = `<strong>Copy now — shown once:</strong><br>${escapeHtml(data.api_key)}`;
+      loadApiKeys();
+      toast('API key created', 'success');
+    } catch (err) { toast(err.message, 'error'); }
+  });
+
+  window.__toggleSchedule = async (id, enabled) => {
+    await apiFetch(`${API}/schedules/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled }) });
+    loadSchedules();
+  };
+  window.__deleteSchedule = async (id) => {
+    await apiFetch(`${API}/schedules/${id}`, { method: 'DELETE' });
+    loadSchedules();
+  };
+  window.__testWebhook = async (id) => {
+    const res = await apiFetch(`${API}/webhooks/${id}/test`, { method: 'POST' });
+    const data = await res.json();
+    toast(data.success ? 'Webhook test OK' : (data.error || 'Test failed'), data.success ? 'success' : 'error');
+  };
+  window.__deleteWebhook = async (id) => {
+    await apiFetch(`${API}/webhooks/${id}`, { method: 'DELETE' });
+    loadWebhooks();
+  };
+  window.__revokeApiKey = async (id) => {
+    await apiFetch(`${API}/api-keys/${id}`, { method: 'DELETE' });
+    loadApiKeys();
+  };
+
+  // --- PWA ---
+  function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (!localStorage.getItem(PWA_DISMISS_KEY) && isMobile()) {
+      $('#pwa-install-banner')?.classList.remove('hidden');
+    }
+  });
+
+  $('#pwa-install-btn')?.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    $('#pwa-install-banner')?.classList.add('hidden');
+  });
+  $('#pwa-dismiss-btn')?.addEventListener('click', () => {
+    localStorage.setItem(PWA_DISMISS_KEY, '1');
+    $('#pwa-install-banner')?.classList.add('hidden');
+  });
+  $('#install-pwa-btn')?.addEventListener('click', () => $('#pwa-install-btn')?.click());
+
+  window.addEventListener('online', () => {
+    if (wasOffline) toast('Back online — syncing', 'success');
+    wasOffline = false;
+    if (currentJobId && pollTimer) pollLiveStatus(currentJobId);
+  });
+  window.addEventListener('offline', () => {
+    wasOffline = true;
+    toast('You are offline — changes saved locally', 'error');
+  });
+
+  async function checkAuth() {
+    try {
+      const res = await apiFetch(`${API}/auth/status`);
+      const data = await res.json();
+      if (data.auth_enabled && !data.authenticated) {
+        window.location.href = '/login';
+        return false;
+      }
+      if (data.auth_enabled) $('#logout-btn')?.classList.remove('hidden');
+      return true;
+    } catch { return true; }
+  }
+
+  $('#logout-btn')?.addEventListener('click', async () => {
+    await apiFetch(`${API}/auth/logout`, { method: 'POST' });
+    window.location.href = '/login';
+  });
 
   // --- Settings form ---
   $('#settings-form').addEventListener('submit', (e) => {
@@ -1322,13 +1711,19 @@
   // --- Init ---
   async function init() {
     try {
+      const authed = await checkAuth();
+      if (!authed) return;
+      registerServiceWorker();
       initHero();
       applySettingsToForm();
+      restoreFormDraft();
       checkHealth();
       setInterval(checkHealth, 30000);
+      loadMobileDashboard();
+      window.addEventListener('resize', loadMobileDashboard);
 
       try {
-        const res = await fetch(`${API}/settings`);
+        const res = await apiFetch(`${API}/settings`);
         const serverSettings = await res.json();
         if (!$('#setting-user-agent').value) {
           $('#setting-user-agent').value = serverSettings.default_user_agent;

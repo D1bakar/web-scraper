@@ -2,6 +2,45 @@
 
 All notable changes to Web Scraper Pro are documented here.
 
+## [2.4.0] — 2026-08-12 — Mobile-First Release
+
+### Added — Mobile UI
+- **Bottom navigation** on screens <768px: New Scrape, Jobs, History, Settings, More
+- **Mobile dashboard** with NEW SCRAPE CTA, active/total job stats
+- **Results & history cards** on mobile; tables remain on desktop
+- **Touch targets** minimum 44px; 16px input font (prevents iOS zoom)
+- **Job monitoring** with elapsed time, progress, expandable status sections
+- **Form draft** persistence in sessionStorage
+- **Network reconnect** toasts; offline awareness
+- **Copy button** per result field on mobile cards
+- **Raw JSON** expandable section
+- **Collapsible icon sidebar** on tablet (768–1024px)
+
+### Added — PWA
+- `manifest.json` with standalone display and theme color
+- Service worker for **static asset caching only**
+- Install prompt banner on mobile
+- Apple mobile web app meta tags
+- PWA icons (192/512)
+
+### Added — Backend MVP
+- **Optional admin login** (`ADMIN_USER`/`ADMIN_PASSWORD`) with secure session cookie
+- **Schedules CRUD** — hourly/daily interval-based job scheduling
+- **Webhooks CRUD** — test endpoint + delivery log
+- **API Keys** — generate/revoke, shown once on create
+- **`/api/dashboard/summary`** endpoint for mobile dashboard
+- **Job pagination** — `offset`, `mobile=true` (limit 10)
+
+### Added — Docs & Tests
+- `docs/MOBILE_AUDIT.md` — full mobile audit report
+- `docs/MOBILE.md` — phone usage and PWA install guide
+- `tests/test_mobile_api.py` — 11 new tests (66 total passing)
+
+### Changed
+- GZip compression middleware for API responses
+- Webhook dispatch supports DB-registered hooks + env `WEBHOOK_URL`
+- Version bumped to **2.4.0** across all modules
+
 ## [2.3.1] — 2026-08-12 — Stability Patch
 
 ### Fixed

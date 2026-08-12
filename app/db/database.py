@@ -91,6 +91,13 @@ def safe_commit(db: Session) -> None:
             raise
 
 
+def get_session_factory():
+    """Return session factory, initializing engine if needed."""
+    if _SessionLocal is None:
+        get_engine()
+    return _SessionLocal
+
+
 def check_db_connection() -> bool:
     try:
         engine = get_engine()
