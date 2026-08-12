@@ -60,6 +60,7 @@ class JobManager:
             "same_domain": request.same_domain,
             "selectors": request.selectors,
             "urls": request.urls,
+            "max_urls": request.max_urls,
             "price_selector": request.price_selector,
             "product_label": request.product_label,
             "delay": request.delay or self.settings.default_delay,
@@ -148,6 +149,7 @@ class JobManager:
             product_label=config.get("product_label"),
             max_pages=config.get("max_pages"),
             same_domain=config.get("same_domain", True),
+            max_urls=config.get("max_urls"),
             delay=config.get("delay"),
             timeout=config.get("timeout"),
             retries=config.get("retries"),
@@ -209,9 +211,19 @@ class JobManager:
                         progress_callback=on_progress,
                     )
                 elif request.mode == ScrapeMode.META:
-                    if not request.url:
+                    if not request.url and not (config.get("urls") or []):
                         raise ScraperError("URL is required for meta mode")
-                    data = await scraper.scrape_page_meta(str(request.url))
+                    batch_urls = config.get("urls") or []
+                    if batch_urls:
+                        data = []
+                        for idx, batch_url in enumerate(batch_urls, start=1):
+                            meta = await scraper.scrape_page_meta(batch_url)
+                            data.append(meta)
+                            await on_price_progress(idx, len(data))
+                            if idx < len(batch_urls) and scraper.delay:
+                                await asyncio.sleep(scraper.delay)
+                    else:
+                        data = await scraper.scrape_page_meta(str(request.url))
                 elif request.mode == ScrapeMode.LINKS:
                     if not request.url:
                         raise ScraperError("URL is required for links mode")
@@ -230,6 +242,30 @@ class JobManager:
                     if not selectors:
                         raise ScraperError("At least one CSS selector is required")
                     data = await scraper.scrape_selectors(str(request.url), selectors)
+                elif request.mode == ScrapeMode.SITEMAP:
+                    if not request.url:
+                        raise ScraperError("URL is required for sitemap mode")
+                    data = await scraper.scrape_sitemap(
+                        str(request.url),
+                        max_urls=config.get("max_urls") or 500,
+                        progress_callback=on_progress,
+                    )
+                elif request.mode == ScrapeMode.EMAIL_EXTRACT:
+                    if not request.url:
+                        raise ScraperError("URL is required for email_extract mode")
+                    data = await scraper.scrape_emails(str(request.url))
+                elif request.mode == ScrapeMode.JSON_LD:
+                    if not request.url:
+                        raise ScraperError("URL is required for json_ld mode")
+                    data = await scraper.scrape_json_ld(str(request.url))
+                elif request.mode == ScrapeMode.SOCIAL_META:
+                    if not request.url:
+                        raise ScraperError("URL is required for social_meta mode")
+                    data = await scraper.scrape_social_meta(str(request.url))
+                elif request.mode == ScrapeMode.READABILITY:
+                    if not request.url:
+                        raise ScraperError("URL is required for readability mode")
+                    data = await scraper.scrape_readability(str(request.url))
                 else:
                     raise ScraperError(f"Unknown mode: {request.mode}")
 

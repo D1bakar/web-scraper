@@ -21,11 +21,19 @@ Web Scraper Pro was engineered as a deployment-ready data extraction platform â€
 
 | Contributor | Contributions |
 |-------------|---------------|
-| [D1bakar](https://github.com/D1bakar) | Initial release, v2.1 security & UI overhaul |
+| [D1bakar](https://github.com/D1bakar) | Initial release, v2.1 security & UI overhaul, v2.2 revolutionary modes |
 
 ---
 
-## How to get listed
+## Welcome Contributors!
+
+We're building the most reliable open-source web extraction platform. Whether you're fixing a bug, adding a scrape mode, or improving docs â€” **your PR matters**.
+
+**Get started:**
+1. Read [OPEN_SOURCE.md](OPEN_SOURCE.md) for our philosophy
+2. Pick an issue labeled `good first issue`
+3. Follow [CONTRIBUTING.md](CONTRIBUTING.md)
+4. Join us on the contributors list above!
 
 1. Open a pull request that is merged to `main`.
 2. Add yourself to the Contributors table above, or ask a maintainer to do so.

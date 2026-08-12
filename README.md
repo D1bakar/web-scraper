@@ -1,6 +1,6 @@
 <p align="center">
   <strong>⚡ Web Scraper Pro</strong><br>
-  <em>Enterprise-grade web data extraction — API, dashboard, job queue, and exports in one deployable platform.</em>
+  <em>Engineered for reliability at scale — API, dashboard, job queue, and exports in one deployable platform.</em>
 </p>
 
 <p align="center">
@@ -28,9 +28,25 @@
 
 Web Scraper Pro transforms polite, structured web extraction into a **deployment-ready product**. Launch scrape jobs from a premium liquid-glass dashboard or REST API, track progress in real time, export results as JSON/CSV/Excel, and persist job history in SQLite — with robots.txt compliance, SSRF protection, rate limiting, and optional API key auth built in.
 
-> **v2.1** — Liquid glass UI overhaul, defense-in-depth security, job retry, health dashboard, webhook notifications, and SQLite concurrency hardening.
+> **v2.2** — 5 revolutionary scrape modes (sitemap, emails, JSON-LD, social meta, readability), CSV bulk import, smart selector hints, performance stats, and deployment hyper-readiness.
 
 ---
+
+## Feature Matrix (v2.2)
+
+| Mode | Icon | Description |
+|------|------|-------------|
+| **Price Compare** | 💰 | Compare prices across up to 50 URLs + CSV import |
+| **Quotes Demo** | 📖 | Safe first-run demo (quotes.toscrape.com) |
+| **Page Metadata** | 🏷️ | Title, description, headings (+ batch CSV) |
+| **Link Extraction** | 🔗 | All hyperlinks with text |
+| **Table Extraction** | 📊 | HTML tables → structured rows |
+| **Custom Selectors** | 🎯 | CSS selector matching |
+| **Sitemap Crawl** | 🗺️ | Extract all URLs from sitemap.xml |
+| **Email Extract** | 📧 | Find emails on any page |
+| **JSON-LD** | 📦 | schema.org structured data |
+| **Social Meta** | 📱 | Open Graph + Twitter cards |
+| **Readability** | 📰 | Clean article text extraction |
 
 ## Why Web Scraper Pro?
 
@@ -56,7 +72,7 @@ Most scraping tools are disposable scripts or heavyweight frameworks. Web Scrape
 |----------|------------|
 | **API** | Async FastAPI REST endpoints with OpenAPI at [`/api/docs`](#live-api-documentation) |
 | **UI** | Premium **liquid glass** dashboard — animated mesh background, frosted panels, fluid micro-animations |
-| **Modes** | **Price Compare** (featured), quotes demo, page metadata, links, tables, custom CSS selectors |
+| **Modes** | **Price Compare** (featured), quotes demo, page metadata, links, tables, custom CSS selectors, **sitemap, email extract, JSON-LD, social meta, readability** |
 | **Jobs** | Async queue with SQLite WAL persistence, retry failed jobs, optional webhook on complete |
 | **Security** | SSRF protection, optional API key auth, rate limiting, CSP headers, input sanitization |
 | **Compliance** | Automatic robots.txt checks with graceful 403/429 error messages |

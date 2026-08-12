@@ -10,8 +10,11 @@ Use these for load balancers, Docker healthchecks, and uptime monitors:
 
 | Endpoint | Purpose | Expected response |
 |----------|---------|-------------------|
-| `GET /api/health` | Lightweight liveness probe | `200` — `{"status":"healthy","version":"2.1.0","database":"connected"}` |
-| `GET /api/health/detail` | Full system dashboard data | `200` — uptime, active jobs, SSRF status, rate limits |
+| `GET /api/health/live` | **Liveness probe** (K8s/Docker) | `200` — `{"status":"alive"}` |
+| `GET /api/health/ready` | **Readiness probe** (DB connected) | `200` or `503` if DB down |
+| `GET /api/health` | Lightweight health check | `200` — `{"status":"healthy","version":"2.2.0"}` |
+| `GET /api/health/detail` | Full system dashboard data | `200` — uptime, active jobs, SSRF status |
+| `GET /api/stats` | Performance benchmarks | `200` — success rate, avg job duration |
 | `GET /` | Dashboard SPA (optional smoke test) | `200` — HTML |
 
 **Docker / compose healthcheck** (included):
@@ -104,18 +107,22 @@ Data persists in the `scraper-data` volume (`/app/data`).
    ```
 3. Set environment variables in the Railway dashboard (see `.env.example`).
 4. Add a **volume** mounted at `/app/data` for durable SQLite history.
-5. Configure health check path: `/api/health`
+5. Configure health check path: `/api/health/ready`
+
+Or use the included `railway.toml` for automatic configuration.
 
 ---
 
 ## Render
+
+Use the included `render.yaml` for one-click deploy, or:
 
 1. Create a **Web Service** from the GitHub repo.
 2. **Build command:** `pip install -r requirements.txt`
 3. **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 4. Set env vars from `.env.example`.
 5. Add a **disk** at `/app/data` (optional, for job history).
-6. Health check path: `/api/health`
+6. Health check path: `/api/health/ready`
 
 ---
 
@@ -190,7 +197,7 @@ sudo certbot --nginx -d scraper.yourdomain.com
 - [ ] `ALLOW_PRIVATE_URLS=false`
 - [ ] TLS terminated at reverse proxy
 - [ ] Persistent volume for `/app/data` (SQLite)
-- [ ] Health check monitoring on `/api/health`
+- [ ] Health check monitoring on `/api/health/ready` (readiness) and `/api/health/live` (liveness)
 - [ ] Log aggregation configured (`LOG_LEVEL=INFO` or `WARNING`)
 
 ---

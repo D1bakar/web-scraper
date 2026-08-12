@@ -10,13 +10,28 @@ Web Scraper Pro is not another BeautifulSoup tutorial script. It is a **producti
 | **REST API + OpenAPI** | Build yourself | Requires Scrapy Cloud or custom | Limited / paid tiers | **Built-in** (`/api/docs`) |
 | **Dashboard UI** | None | None | Visual point-and-click | **Liquid glass SPA** |
 | **Job queue & history** | Manual | Via extensions | Cloud-managed | **SQLite WAL + retry** |
-| **Price comparison** | Custom logic | Custom spider | Template-based | **First-class mode** (50 URLs/run) |
+| **Modes** | Write custom parsers | Spider templates | Visual templates | **11 modes** — sitemap, emails, JSON-LD, social meta, readability + more |
+| **Price comparison** | Custom logic | Custom spider | Template-based | **First-class mode** (50 URLs/run + CSV import) |
+| **Selector intelligence** | Manual inspect | Manual | Auto-detect (paid) | **Heuristic hints** (no API key needed) |
+| **Performance stats** | None | External monitoring | Vendor dashboard | **Built-in `/api/stats`** |
 | **Security (SSRF, rate limit)** | Your responsibility | Partial | Vendor-managed | **SSRF blocklist, API key, CSP** |
 | **robots.txt compliance** | Optional | Built-in | Varies | **On by default** |
 | **Export formats** | Print to stdout | Item pipelines | CSV/Excel | **JSON, CSV, Excel** |
 | **Self-hosted / no vendor lock-in** | Yes | Yes | No (SaaS) | **Yes** (MIT, Docker) |
 | **JavaScript rendering** | Needs Playwright add-on | Splash / Playwright | Built-in | Roadmap (see issues) |
 | **Scale (1000+ sites)** | Fragile | Excellent | Enterprise plans | Batch + API (roadmap) |
+
+## v2.2 Scrape Modes — What Others Don't Ship Out of the Box
+
+| Mode | What it does | Typical DIY effort |
+|------|--------------|-------------------|
+| **SITEMAP** | Crawl sitemap.xml → all URLs | Custom XML parser + recursion |
+| **EMAIL_EXTRACT** | Find emails in text + mailto links | Regex + edge case handling |
+| **JSON_LD** | schema.org products, prices, ratings | JSON parsing + schema mapping |
+| **SOCIAL_META** | og:* and twitter:* tags | Manual meta tag iteration |
+| **READABILITY** | Clean article text extraction | readability-lxml integration |
+| **Price Compare** | Multi-site price table + CSV import | Full custom pipeline |
+| **Smart Selectors** | Heuristic CSS hints | Manual inspect every time |
 
 ## What Sets It Apart
 

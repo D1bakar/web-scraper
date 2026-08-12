@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/D1bakar/web-scraper#readme
+    about: Read the README and deployment guides
+  - name: Discussions
+    url: https://github.com/D1bakar/web-scraper/issues
+    about: Ask questions via GitHub Issues

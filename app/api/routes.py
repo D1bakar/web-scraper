@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+import csv
+import io
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -10,6 +14,7 @@ from app import __version__
 from app.core.config import get_settings
 from app.core.exporters import prepare_export
 from app.core.jobs import get_uptime_seconds, job_manager
+from app.core.scraper import AsyncWebScraper, ScraperError
 from app.db.database import check_db_connection, get_db
 from app.db.models import JobRecord
 from app.models.schemas import (
@@ -20,10 +25,13 @@ from app.models.schemas import (
     JobListResponse,
     JobResponse,
     JobStatus,
+    ModeStats,
     ResultResponse,
     ScrapeMode,
     ScrapeRequest,
+    SelectorHintsResponse,
     SettingsResponse,
+    StatsResponse,
 )
 
 router = APIRouter()
@@ -51,11 +59,22 @@ def _validate_request(request: ScrapeRequest) -> None:
         ScrapeMode.LINKS,
         ScrapeMode.TABLES,
         ScrapeMode.SELECTORS,
+        ScrapeMode.SITEMAP,
+        ScrapeMode.EMAIL_EXTRACT,
+        ScrapeMode.JSON_LD,
+        ScrapeMode.SOCIAL_META,
+        ScrapeMode.READABILITY,
     }
-    if url_required and not request.url:
+    if url_required and not request.url and not request.urls:
         raise HTTPException(status_code=422, detail=f"URL is required for {request.mode.value} mode")
     if request.mode == ScrapeMode.SELECTORS and not request.selectors:
         raise HTTPException(status_code=422, detail="At least one CSS selector is required")
+    if request.mode in (ScrapeMode.PRICE_COMPARE, ScrapeMode.META) and request.urls:
+        if len(request.urls) > MAX_PRICE_COMPARE_URLS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Maximum {MAX_PRICE_COMPARE_URLS} URLs allowed per batch job",
+            )
     if request.mode == ScrapeMode.PRICE_COMPARE:
         if not request.urls:
             raise HTTPException(
@@ -67,6 +86,64 @@ def _validate_request(request: ScrapeRequest) -> None:
                 status_code=422,
                 detail=f"Maximum {MAX_PRICE_COMPARE_URLS} URLs allowed per price compare job",
             )
+
+
+def _compute_stats(db: Session) -> StatsResponse:
+    jobs = db.query(JobRecord).all()
+    total = len(jobs)
+    completed = [j for j in jobs if j.status == JobStatus.COMPLETED.value]
+    failed = [j for j in jobs if j.status == JobStatus.FAILED.value]
+    finished = completed + failed
+
+    durations: list[float] = []
+    for job in finished:
+        if job.completed_at and job.created_at:
+            delta = (job.completed_at - job.created_at).total_seconds()
+            if delta >= 0:
+                durations.append(delta)
+
+    avg_duration = round(sum(durations) / len(durations), 2) if durations else None
+    success_rate = round(len(completed) / len(finished) * 100, 1) if finished else 0.0
+
+    by_mode: dict[str, list[JobRecord]] = {}
+    for job in jobs:
+        by_mode.setdefault(job.mode, []).append(job)
+
+    mode_stats: list[ModeStats] = []
+    for mode, mode_jobs in sorted(by_mode.items()):
+        mode_completed = [j for j in mode_jobs if j.status == JobStatus.COMPLETED.value]
+        mode_failed = [j for j in mode_jobs if j.status == JobStatus.FAILED.value]
+        mode_finished = mode_completed + mode_failed
+        mode_durations = []
+        for job in mode_finished:
+            if job.completed_at and job.created_at:
+                delta = (job.completed_at - job.created_at).total_seconds()
+                if delta >= 0:
+                    mode_durations.append(delta)
+        mode_stats.append(ModeStats(
+            mode=mode,
+            total=len(mode_jobs),
+            completed=len(mode_completed),
+            failed=len(mode_failed),
+            success_rate=round(
+                len(mode_completed) / len(mode_finished) * 100, 1
+            ) if mode_finished else 0.0,
+            avg_duration_seconds=round(
+                sum(mode_durations) / len(mode_durations), 2
+            ) if mode_durations else None,
+        ))
+
+    return StatsResponse(
+        version=__version__,
+        total_jobs=total,
+        completed_jobs=len(completed),
+        failed_jobs=len(failed),
+        success_rate=success_rate,
+        avg_job_duration_seconds=avg_duration,
+        active_jobs=job_manager.active_job_count,
+        uptime_seconds=round(get_uptime_seconds(), 1),
+        by_mode=mode_stats,
+    )
 
 
 @router.get("/health", response_model=HealthResponse, tags=["System"])
@@ -90,6 +167,91 @@ def health_detail() -> HealthDetailResponse:
         api_key_required=bool(settings.api_key),
         ssrf_protection=not settings.allow_private_urls,
         rate_limit_per_minute=settings.rate_limit_per_minute,
+    )
+
+
+@router.get("/health/live", tags=["System"])
+def health_live() -> dict[str, str]:
+    return {"status": "alive", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+@router.get("/health/ready", tags=["System"])
+def health_ready() -> dict[str, str]:
+    db_ok = check_db_connection()
+    if not db_ok:
+        raise HTTPException(status_code=503, detail="Database not ready")
+    return {"status": "ready", "database": "connected"}
+
+
+@router.get("/stats", response_model=StatsResponse, tags=["System"])
+def get_stats(db: Session = Depends(get_db)) -> StatsResponse:
+    return _compute_stats(db)
+
+
+@router.get("/selector-hints", response_model=SelectorHintsResponse, tags=["Scraping"])
+async def get_selector_hints(
+    url: str = Query(..., min_length=10, description="Page URL to analyze"),
+) -> SelectorHintsResponse:
+    settings = get_settings()
+    scraper = AsyncWebScraper(
+        delay=0,
+        timeout=settings.default_timeout,
+        retries=settings.default_retries,
+        check_robots=False,
+        allow_private_urls=settings.allow_private_urls,
+    )
+    try:
+        hints = await scraper.suggest_selectors(url)
+    except ScraperError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return SelectorHintsResponse(**hints)
+
+
+@router.post("/jobs/import-csv", response_model=JobCreateResponse, status_code=202, tags=["Jobs"])
+async def import_csv_job(
+    background_tasks: BackgroundTasks,
+    mode: ScrapeMode = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> JobCreateResponse:
+    if mode not in (ScrapeMode.PRICE_COMPARE, ScrapeMode.META):
+        raise HTTPException(
+            status_code=422,
+            detail="CSV import supports price_compare and meta modes only",
+        )
+
+    content = await file.read()
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="CSV must be UTF-8 encoded") from exc
+
+    urls: list[str] = []
+    reader = csv.reader(io.StringIO(text))
+    for row in reader:
+        for cell in row:
+            cell = cell.strip()
+            if cell.lower() in ("url", "urls") or not cell:
+                continue
+            if cell.startswith(("http://", "https://")):
+                urls.append(cell)
+
+    if not urls:
+        raise HTTPException(status_code=422, detail="No valid URLs found in CSV file")
+    if len(urls) > MAX_PRICE_COMPARE_URLS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Maximum {MAX_PRICE_COMPARE_URLS} URLs allowed per import",
+        )
+
+    request = ScrapeRequest(mode=mode, urls=urls, check_robots=False, delay=0)
+    _validate_request(request)
+    job = job_manager.create_job_record(db, request)
+    background_tasks.add_task(job_manager.enqueue, db, job, request)
+    return JobCreateResponse(
+        job_id=job.id,
+        status=JobStatus.PENDING,
+        message=f"CSV import job queued ({len(urls)} URLs, {mode.value})",
     )
 
 

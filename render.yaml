@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: web-scraper-pro
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health/ready
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        value: sqlite:///./data/scraper.db
+      - key: CHECK_ROBOTS_TXT
+        value: "true"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "60"
+    disk:
+      name: scraper-data
+      mountPath: /app/data
+      sizeGB: 1

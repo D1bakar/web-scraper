@@ -86,6 +86,57 @@
       columns: { selector: 'Selector', match: 'Match #', text: 'Text', html: 'HTML snippet' },
       emptyHint: 'No elements matched your selectors. Check spelling and try simpler selectors like h1 or .class.',
     },
+    sitemap: {
+      description:
+        'Crawls sitemap.xml (and sitemap indexes) to extract all page URLs. Great for site audits and bulk discovery.',
+      example: 'https://quotes.toscrape.com',
+      placeholder: 'https://example.com',
+      sitemapMode: true,
+      summary: (n) => `Found ${n} URL${n !== 1 ? 's' : ''} in sitemap`,
+      columns: { url: 'URL', source_sitemap: 'Source Sitemap' },
+      emptyHint: 'No URLs found. Ensure the site has /sitemap.xml or provide a direct sitemap URL.',
+      submitLabel: 'Crawl Sitemap',
+    },
+    email_extract: {
+      description:
+        'Extracts email addresses from page text and mailto: links. Useful for outreach research and contact discovery.',
+      example: 'https://quotes.toscrape.com',
+      placeholder: 'https://example.com/contact',
+      summary: (n) => `Found ${n} email address${n !== 1 ? 'es' : ''}`,
+      columns: { email: 'Email', source: 'Source', context: 'Context' },
+      emptyHint: 'No emails found on this page.',
+      submitLabel: 'Extract Emails',
+    },
+    json_ld: {
+      description:
+        'Extracts JSON-LD structured data (schema.org) — products, prices, ratings, and reviews.',
+      example: 'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html',
+      placeholder: 'https://example.com/product',
+      summary: (n) => `Found ${n} JSON-LD schema block${n !== 1 ? 's' : ''}`,
+      columns: { type: 'Type', name: 'Name', price: 'Price', price_currency: 'Currency', rating_value: 'Rating' },
+      emptyHint: 'No JSON-LD structured data found on this page.',
+      submitLabel: 'Extract JSON-LD',
+    },
+    social_meta: {
+      description:
+        'Extracts Open Graph and Twitter Card metadata — og:title, og:image, twitter:card, and more.',
+      example: 'https://quotes.toscrape.com',
+      placeholder: 'https://example.com',
+      cardMode: true,
+      summary: () => 'Showing social sharing metadata (Open Graph + Twitter)',
+      emptyHint: 'No social metadata found.',
+      submitLabel: 'Extract Social Meta',
+    },
+    readability: {
+      description:
+        'Extracts clean main article text using readability heuristics — strips nav, ads, and boilerplate.',
+      example: 'https://quotes.toscrape.com',
+      placeholder: 'https://example.com/article',
+      articleMode: true,
+      summary: (n) => `Extracted article with ${n} word${n !== 1 ? 's' : ''}`,
+      emptyHint: 'Could not extract readable content from this page.',
+      submitLabel: 'Extract Article',
+    },
   };
 
   const MAX_COMPARE_URLS = 50;
@@ -174,14 +225,31 @@
     return 10;
   }
 
-  // --- Navigation ---
+  // --- Error boundary ---
+  window.addEventListener('error', (e) => {
+    console.error('UI error:', e.error || e.message);
+    toast('Something went wrong in the UI. Try refreshing the page.', 'error');
+  });
+
+  window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled promise:', e.reason);
+    toast('An unexpected error occurred. Please try again.', 'error');
+  });
+
+  // --- Navigation with transitions ---
   $$('.nav-item').forEach((btn) => {
     btn.addEventListener('click', () => {
       $$('.nav-item').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       const view = btn.dataset.view;
-      $$('.view').forEach((v) => v.classList.remove('active'));
-      $(`#view-${view}`).classList.add('active');
+      $$('.view').forEach((v) => {
+        v.classList.remove('active');
+        v.classList.add('view-exit');
+      });
+      const target = $(`#view-${view}`);
+      target.classList.remove('view-exit');
+      target.classList.add('active', 'view-enter');
+      setTimeout(() => target.classList.remove('view-enter'), 300);
       if (view === 'history') loadHistory();
       if (view === 'health') loadHealthDashboard();
     });
@@ -196,13 +264,18 @@
     const pagesGroup = $('#pages-group');
     const domainGroup = $('#domain-group');
     const priceComparePanel = $('#price-compare-panel');
+    const batchMetaGroup = $('#batch-meta-group');
+    const maxUrlsGroup = $('#max-urls-group');
     const tryExampleBtn = $('#try-example-btn');
     const modeDesc = $('#mode-description');
     const submitText = $('.btn-text');
     const pageSubtitle = $('#page-subtitle');
 
     const isPriceCompare = mode === 'price_compare';
+    const isBatchMeta = mode === 'meta';
     priceComparePanel.classList.toggle('hidden', !isPriceCompare);
+    batchMetaGroup.classList.toggle('hidden', !isBatchMeta);
+    maxUrlsGroup.classList.toggle('hidden', mode !== 'sitemap');
     urlGroup.classList.toggle('hidden', mode === 'quotes' || isPriceCompare);
     selectorsGroup.classList.toggle('hidden', mode !== 'selectors');
     pagesGroup.classList.toggle('hidden', mode !== 'quotes');
@@ -262,6 +335,102 @@
     toast('Example URLs loaded — click Compare Prices to try it', 'info');
   });
 
+  function parseCsvText(text) {
+    return text
+      .split(/\r?\n/)
+      .flatMap((line) => line.split(','))
+      .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+      .filter((s) => s && s.toLowerCase() !== 'url' && s.startsWith('http'));
+  }
+
+  function handleCsvFile(file, targetTextarea) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const urls = parseCsvText(e.target.result);
+      if (!urls.length) {
+        toast('No valid URLs found in CSV', 'error');
+        return;
+      }
+      if (urls.length > MAX_COMPARE_URLS) {
+        toast(`CSV has ${urls.length} URLs — using first ${MAX_COMPARE_URLS}`, 'info');
+      }
+      $(targetTextarea).value = urls.slice(0, MAX_COMPARE_URLS).join('\n');
+      toast(`Imported ${Math.min(urls.length, MAX_COMPARE_URLS)} URLs from CSV`, 'success');
+    };
+    reader.readAsText(file);
+  }
+
+  $('#csv-import')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleCsvFile(file, '#compare-urls');
+    e.target.value = '';
+  });
+
+  $('#meta-csv-import')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleCsvFile(file, '#batch-meta-urls');
+    e.target.value = '';
+  });
+
+  $('#suggest-selectors-btn')?.addEventListener('click', async () => {
+    const urls = $('#compare-urls').value.split('\n').map((s) => s.trim()).filter(Boolean);
+    const singleUrl = $('#url').value.trim();
+    const targetUrl = urls[0] || singleUrl;
+    if (!targetUrl) {
+      toast('Enter a URL first to get selector hints', 'error');
+      return;
+    }
+    const hintsEl = $('#selector-hints');
+    hintsEl.classList.remove('hidden');
+    hintsEl.innerHTML = '<div class="skeleton skeleton-line"></div>';
+    try {
+      const res = await fetch(`${API}/selector-hints?url=${encodeURIComponent(targetUrl)}`, {
+        headers: apiHeaders(),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Failed to get hints');
+      }
+      const data = await res.json();
+      const priceHints = (data.price_selectors || []).slice(0, 5);
+      if (!priceHints.length) {
+        hintsEl.innerHTML = '<p class="form-hint">No price selectors detected on this page.</p>';
+        return;
+      }
+      hintsEl.innerHTML = `
+        <p class="form-hint"><strong>Smart selector hints</strong> (click to apply):</p>
+        <div class="hint-chips">
+          ${priceHints.map((h) => `
+            <button type="button" class="hint-chip" data-selector="${escapeHtml(h.selector)}">
+              ${escapeHtml(h.selector)} <span class="hint-conf">${Math.round(h.confidence * 100)}%</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      hintsEl.querySelectorAll('.hint-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          $('#price-selector').value = chip.dataset.selector;
+          toast(`Applied selector: ${chip.dataset.selector}`, 'success');
+        });
+      });
+      if (data.recommended_price) {
+        $('#price-selector').value = data.recommended_price;
+      }
+    } catch (err) {
+      hintsEl.innerHTML = `<p class="form-hint" style="color:var(--error)">${escapeHtml(err.message)}</p>`;
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      const form = $('#scrape-form');
+      if (form && !$('#submit-btn').disabled) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    }
+  });
+
   // --- Health check ---
   async function checkHealth() {
     const badge = $('#health-badge');
@@ -308,8 +477,41 @@
           <div class="health-card-status ${c.status}">${c.status === 'ok' ? '● Normal' : c.status === 'warn' ? '● Warning' : '● Error'}</div>
         </div>
       `).join('');
+
+      await loadStatsDashboard();
     } catch {
       container.innerHTML = '<div class="health-card glass-panel"><p style="color:var(--error)">Failed to load health data. Is the server running?</p></div>';
+    }
+  }
+
+  async function loadStatsDashboard() {
+    const statsEl = $('#stats-dashboard');
+    if (!statsEl) return;
+    statsEl.classList.remove('hidden');
+    statsEl.innerHTML = '<div class="health-card glass-panel skeleton-card"><div class="skeleton skeleton-line"></div></div>';
+
+    try {
+      const res = await fetch(`${API}/stats`, { headers: apiHeaders() });
+      const stats = await res.json();
+      const statCards = [
+        { label: 'Total Jobs', value: stats.total_jobs, status: 'ok' },
+        { label: 'Success Rate', value: `${stats.success_rate}%`, status: stats.success_rate >= 80 ? 'ok' : 'warn' },
+        { label: 'Avg Job Time', value: stats.avg_job_duration_seconds != null ? `${stats.avg_job_duration_seconds}s` : 'N/A', status: 'ok' },
+        { label: 'Completed', value: stats.completed_jobs, status: 'ok' },
+        { label: 'Failed', value: stats.failed_jobs, status: stats.failed_jobs > 0 ? 'warn' : 'ok' },
+      ];
+      statsEl.innerHTML = `
+        <h3 class="stats-heading">Performance Stats</h3>
+        ${statCards.map((c, i) => `
+          <div class="health-card glass-panel slide-up" style="animation-delay:${i * 0.05}s">
+            <div class="health-card-label">${c.label}</div>
+            <div class="health-card-value">${escapeHtml(String(c.value))}</div>
+            <div class="health-card-status ${c.status}">● Benchmark</div>
+          </div>
+        `).join('')}
+      `;
+    } catch {
+      statsEl.innerHTML = '';
     }
   }
 
@@ -377,6 +579,20 @@
     }
     if (mode === 'selectors') {
       body.selectors = $('#selectors').value.split('\n').map((s) => s.trim()).filter(Boolean);
+    }
+    if (mode === 'meta') {
+      const batchUrls = $('#batch-meta-urls')?.value
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (batchUrls?.length) {
+        body.urls = batchUrls;
+        delete body.url;
+      }
+    }
+    if (mode === 'sitemap') {
+      const maxUrls = $('#max-urls')?.value;
+      if (maxUrls) body.max_urls = parseInt(maxUrls, 10);
     }
 
     try {
@@ -519,7 +735,7 @@
   }
 
   function normalizeResults(data, mode) {
-    if (mode === 'meta' && typeof data === 'object' && data !== null && !Array.isArray(data)) {
+    if ((mode === 'meta' || mode === 'social_meta' || mode === 'readability') && typeof data === 'object' && data !== null && !Array.isArray(data)) {
       return [data];
     }
     if (Array.isArray(data)) {
@@ -642,6 +858,68 @@
     $('#results-count').textContent = `${headings.length} heading${headings.length !== 1 ? 's' : ''}`;
   }
 
+  function renderSocialMetaCard(data) {
+    const metaEl = $('#results-meta');
+    const tableWrap = $('#results-table-wrap');
+    const emptyEl = $('#results-empty');
+
+    emptyEl.classList.add('hidden');
+    tableWrap.classList.add('hidden');
+    metaEl.classList.remove('hidden');
+
+    const og = data.open_graph || {};
+    const tw = data.twitter || {};
+    const ogItems = Object.entries(og).map(([k, v]) => `<li><strong>og:${escapeHtml(k)}</strong> — ${escapeHtml(v)}</li>`).join('');
+    const twItems = Object.entries(tw).map(([k, v]) => `<li><strong>twitter:${escapeHtml(k)}</strong> — ${escapeHtml(v)}</li>`).join('');
+
+    metaEl.innerHTML = `
+      <div class="meta-card-item">
+        <div class="meta-card-label">Title</div>
+        <div class="meta-card-value">${escapeHtml(data.title || '—')}</div>
+      </div>
+      ${data.og_image ? `<div class="meta-card-item"><div class="meta-card-label">OG Image</div><div class="meta-card-value"><a href="${escapeHtml(data.og_image)}" target="_blank" rel="noopener">${escapeHtml(data.og_image)}</a></div></div>` : ''}
+      <div class="meta-card-item">
+        <div class="meta-card-label">Open Graph</div>
+        <ul class="meta-headings-list">${ogItems || '<li>No OG tags found</li>'}</ul>
+      </div>
+      <div class="meta-card-item">
+        <div class="meta-card-label">Twitter Cards</div>
+        <ul class="meta-headings-list">${twItems || '<li>No Twitter tags found</li>'}</ul>
+      </div>
+    `;
+    $('#results-count').textContent = `${Object.keys(og).length + Object.keys(tw).length} tags`;
+  }
+
+  function renderReadabilityCard(data) {
+    const metaEl = $('#results-meta');
+    const tableWrap = $('#results-table-wrap');
+    const emptyEl = $('#results-empty');
+
+    emptyEl.classList.add('hidden');
+    tableWrap.classList.add('hidden');
+    metaEl.classList.remove('hidden');
+
+    metaEl.innerHTML = `
+      <div class="meta-card-item">
+        <div class="meta-card-label">Title</div>
+        <div class="meta-card-value">${escapeHtml(data.title || '—')}</div>
+      </div>
+      <div class="meta-card-item">
+        <div class="meta-card-label">Word Count</div>
+        <div class="meta-card-value">${data.word_count || 0} words</div>
+      </div>
+      <div class="meta-card-item">
+        <div class="meta-card-label">Excerpt</div>
+        <div class="meta-card-value">${escapeHtml(data.excerpt || '')}</div>
+      </div>
+      <div class="meta-card-item">
+        <div class="meta-card-label">Full Text</div>
+        <div class="meta-card-value article-text">${escapeHtml((data.text || '').slice(0, 5000))}</div>
+      </div>
+    `;
+    $('#results-count').textContent = `${data.word_count || 0} words`;
+  }
+
   function renderResults(rows, mode) {
     renderResultsSummary(mode, rows.length);
 
@@ -654,6 +932,16 @@
 
     if (mode === 'meta') {
       renderMetaCard(rows[0]);
+      return;
+    }
+
+    if (mode === 'social_meta') {
+      renderSocialMetaCard(rows[0]);
+      return;
+    }
+
+    if (mode === 'readability') {
+      renderReadabilityCard(rows[0]);
       return;
     }
 
@@ -759,6 +1047,8 @@
 
   // --- History ---
   async function loadHistory() {
+    const tbody = $('#history-table tbody');
+    tbody.innerHTML = '<tr><td colspan="7"><div class="skeleton skeleton-line"></div></td></tr>';
     try {
       const res = await fetch(`${API}/jobs?limit=50`, { headers: apiHeaders() });
       const data = await res.json();
@@ -832,18 +1122,23 @@
 
   // --- Init ---
   async function init() {
-    applySettingsToForm();
-    checkHealth();
-    setInterval(checkHealth, 30000);
-
     try {
-      const res = await fetch(`${API}/settings`);
-      const serverSettings = await res.json();
-      if (!$('#setting-user-agent').value) {
-        $('#setting-user-agent').value = serverSettings.default_user_agent;
+      applySettingsToForm();
+      checkHealth();
+      setInterval(checkHealth, 30000);
+
+      try {
+        const res = await fetch(`${API}/settings`);
+        const serverSettings = await res.json();
+        if (!$('#setting-user-agent').value) {
+          $('#setting-user-agent').value = serverSettings.default_user_agent;
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.error('Init failed:', err);
+      toast('Failed to initialize dashboard', 'error');
     }
   }
 

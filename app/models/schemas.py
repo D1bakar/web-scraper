@@ -25,6 +25,11 @@ class ScrapeMode(str, Enum):
     LINKS = "links"
     TABLES = "tables"
     SELECTORS = "selectors"
+    SITEMAP = "sitemap"
+    EMAIL_EXTRACT = "email_extract"
+    JSON_LD = "json_ld"
+    SOCIAL_META = "social_meta"
+    READABILITY = "readability"
 
 
 class JobStatus(str, Enum):
@@ -47,6 +52,8 @@ class ScrapeRequest(BaseModel):
     product_label: str | None = None
     max_pages: int | None = Field(default=None, ge=1, le=100)
     same_domain: bool = True
+    max_urls: int | None = Field(default=None, ge=1, le=5000)
+    csv_urls: str | None = Field(default=None, max_length=500_000)
     delay: float | None = Field(default=None, ge=0, le=30)
     timeout: int | None = Field(default=None, ge=5, le=120)
     retries: int | None = Field(default=None, ge=1, le=10)
@@ -95,6 +102,16 @@ class ScrapeRequest(BaseModel):
     def validate_urls_ssrf(self) -> ScrapeRequest:
         settings = get_settings()
         allow_private = settings.allow_private_urls
+
+        if self.csv_urls:
+            parsed = [
+                line.strip()
+                for line in self.csv_urls.replace("\r\n", "\n").split("\n")
+                for line in line.split(",")
+                if line.strip() and line.strip().lower() not in ("url", "urls")
+            ]
+            if parsed:
+                self.urls = list(dict.fromkeys(self.urls + parsed))[:MAX_PRICE_COMPARE_URLS]
 
         if self.url:
             try:
@@ -170,3 +187,42 @@ class SettingsResponse(BaseModel):
     max_concurrent_jobs: int
     rate_limit_per_minute: int
     api_key_required: bool
+
+
+class SelectorHint(BaseModel):
+    selector: str
+    kind: str
+    sample_text: str
+    confidence: float
+    tag: str
+    class_: str | None = Field(default=None, alias="class")
+    id: str | None = None
+
+
+class SelectorHintsResponse(BaseModel):
+    url: str
+    price_selectors: list[SelectorHint]
+    title_selectors: list[SelectorHint]
+    recommended_price: str | None = None
+    recommended_title: str | None = None
+
+
+class ModeStats(BaseModel):
+    mode: str
+    total: int
+    completed: int
+    failed: int
+    success_rate: float
+    avg_duration_seconds: float | None = None
+
+
+class StatsResponse(BaseModel):
+    version: str
+    total_jobs: int
+    completed_jobs: int
+    failed_jobs: int
+    success_rate: float
+    avg_job_duration_seconds: float | None
+    active_jobs: int
+    uptime_seconds: float
+    by_mode: list[ModeStats]

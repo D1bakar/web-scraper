@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -29,6 +31,19 @@ DEFAULT_PRICE_SELECTORS = [
     ".sale-price",
     ".current-price",
 ]
+
+DEFAULT_TITLE_SELECTORS = [
+    "h1",
+    '[itemprop="name"]',
+    ".product-title",
+    ".product-name",
+    "#productTitle",
+    ".title",
+]
+
+EMAIL_PATTERN = re.compile(
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+)
 
 DEFAULT_HEADERS = {
     "Accept": "text/html,application/xhtml+xml",
@@ -83,7 +98,7 @@ class AsyncWebScraper:
         self.timeout = timeout
         self.retries = retries
         self.user_agent = user_agent or (
-            "Mozilla/5.0 (compatible; WebScraperPro/2.1; "
+            "Mozilla/5.0 (compatible; WebScraperPro/2.2; "
             "+https://github.com/D1bakar/web-scraper)"
         )
         self.check_robots = check_robots
@@ -426,3 +441,303 @@ class AsyncWebScraper:
                     await asyncio.sleep(self.delay)
 
         return results
+
+    async def scrape_sitemap(
+        self,
+        url: str,
+        max_urls: int = 500,
+        progress_callback: Any | None = None,
+    ) -> list[dict[str, str]]:
+        """Crawl sitemap.xml and extract all URLs."""
+        parsed = urlparse(url)
+        if not parsed.path.endswith(".xml"):
+            base = url.rstrip("/")
+            candidates = [f"{base}/sitemap.xml", f"{base}/sitemap_index.xml"]
+        else:
+            candidates = [url]
+
+        seen: set[str] = set()
+        urls: list[dict[str, str]] = []
+        errors: list[str] = []
+
+        async with httpx.AsyncClient(
+            headers=self._headers,
+            timeout=self.timeout,
+            follow_redirects=True,
+        ) as client:
+            to_fetch = list(candidates)
+
+            while to_fetch and len(urls) < max_urls:
+                sitemap_url = to_fetch.pop(0)
+                if sitemap_url in seen:
+                    continue
+                seen.add(sitemap_url)
+
+                try:
+                    response = await client.get(sitemap_url)
+                    response.raise_for_status()
+                    root = ET.fromstring(response.text)
+                except (httpx.HTTPError, ET.ParseError) as exc:
+                    errors.append(f"{sitemap_url}: {exc}")
+                    continue
+
+                ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+                locs = root.findall(".//sm:loc", ns) or root.findall(".//loc")
+
+                for loc in locs:
+                    loc_url = (loc.text or "").strip()
+                    if not loc_url:
+                        continue
+                    if loc_url.endswith(".xml") and "sitemap" in loc_url.lower():
+                        if loc_url not in seen:
+                            to_fetch.append(loc_url)
+                        continue
+                    if loc_url not in {u["url"] for u in urls}:
+                        urls.append({"url": loc_url, "source_sitemap": sitemap_url})
+                        if len(urls) >= max_urls:
+                            break
+
+                if progress_callback:
+                    await progress_callback(len(urls), len(urls))
+
+                if self.delay:
+                    await asyncio.sleep(self.delay)
+
+        if not urls:
+            detail = errors[0] if errors else "No sitemap found"
+            raise ScraperError(
+                f"No URLs found in sitemap. Tried {len(seen)} location(s). Last error: {detail}"
+            )
+
+        return urls
+
+    async def scrape_emails(self, url: str) -> list[dict[str, str]]:
+        """Extract email addresses from a page."""
+        soup = await self.fetch(url)
+        found: dict[str, dict[str, str]] = {}
+
+        for anchor in soup.find_all("a", href=True):
+            href = anchor["href"].strip()
+            if href.lower().startswith("mailto:"):
+                email = href[7:].split("?")[0].strip()
+                if EMAIL_PATTERN.match(email):
+                    found.setdefault(email.lower(), {
+                        "email": email,
+                        "source": "mailto",
+                        "context": anchor.get_text(strip=True)[:120] or email,
+                    })
+
+        text = soup.get_text(" ", strip=True)
+        for match in EMAIL_PATTERN.finditer(text):
+            email = match.group()
+            key = email.lower()
+            if key not in found and not key.endswith((".png", ".jpg", ".gif", ".webp")):
+                start = max(0, match.start() - 40)
+                end = min(len(text), match.end() + 40)
+                found[key] = {
+                    "email": email,
+                    "source": "page_text",
+                    "context": text[start:end].strip(),
+                }
+
+        return list(found.values())
+
+    async def scrape_json_ld(self, url: str) -> list[dict[str, Any]]:
+        """Extract JSON-LD structured data (schema.org)."""
+        soup = await self.fetch(url)
+        results: list[dict[str, Any]] = []
+
+        for idx, script in enumerate(soup.find_all("script", type="application/ld+json")):
+            raw = script.string or script.get_text()
+            if not raw or not raw.strip():
+                continue
+            try:
+                data = json.loads(raw.strip())
+            except json.JSONDecodeError:
+                continue
+
+            items = data if isinstance(data, list) else [data]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                entry: dict[str, Any] = {
+                    "index": idx,
+                    "type": item.get("@type", "Unknown"),
+                    "name": item.get("name") or item.get("headline"),
+                    "url": item.get("url"),
+                }
+                if "offers" in item:
+                    offers = item["offers"]
+                    if isinstance(offers, dict):
+                        entry["price"] = offers.get("price")
+                        entry["price_currency"] = offers.get("priceCurrency")
+                    elif isinstance(offers, list) and offers:
+                        entry["price"] = offers[0].get("price")
+                        entry["price_currency"] = offers[0].get("priceCurrency")
+                if "aggregateRating" in item:
+                    rating = item["aggregateRating"]
+                    if isinstance(rating, dict):
+                        entry["rating_value"] = rating.get("ratingValue")
+                        entry["review_count"] = rating.get("reviewCount")
+                entry["raw_keys"] = list(item.keys())[:20]
+                results.append(entry)
+
+        return results
+
+    async def scrape_social_meta(self, url: str) -> dict[str, Any]:
+        """Extract Open Graph and Twitter Card metadata."""
+        soup = await self.fetch(url)
+        og: dict[str, str] = {}
+        twitter: dict[str, str] = {}
+        standard: dict[str, str] = {}
+
+        for meta in soup.find_all("meta"):
+            prop = meta.get("property", "") or meta.get("name", "")
+            content = meta.get("content", "")
+            if not prop or not content:
+                continue
+            prop_lower = prop.lower()
+            if prop_lower.startswith("og:"):
+                og[prop_lower[3:]] = content.strip()
+            elif prop_lower.startswith("twitter:"):
+                twitter[prop_lower[8:]] = content.strip()
+            elif prop_lower in ("description", "keywords", "author", "theme-color"):
+                standard[prop_lower] = content.strip()
+
+        title = og.get("title") or twitter.get("title")
+        if not title and soup.title:
+            title = soup.title.get_text(strip=True)
+
+        return {
+            "url": url,
+            "title": title,
+            "open_graph": og,
+            "twitter": twitter,
+            "standard_meta": standard,
+            "og_image": og.get("image"),
+            "twitter_image": twitter.get("image"),
+        }
+
+    async def scrape_readability(self, url: str) -> dict[str, Any]:
+        """Extract main article content using heuristic content extraction."""
+        soup = await self.fetch(url)
+
+        for tag in soup(["script", "style", "nav", "footer", "header", "aside", "noscript"]):
+            tag.decompose()
+
+        candidates: list[tuple[int, Any]] = []
+        for el in soup.find_all(["article", "main", "div", "section"]):
+            text = el.get_text(" ", strip=True)
+            word_count = len(text.split())
+            if word_count < 50:
+                continue
+            link_text = sum(len(a.get_text(strip=True)) for a in el.find_all("a"))
+            link_density = link_text / max(len(text), 1)
+            score = word_count * (1 - link_density)
+            candidates.append((score, el))
+
+        if candidates:
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            content_el = candidates[0][1]
+        else:
+            content_el = soup.body or soup
+
+        paragraphs = [
+            p.get_text(" ", strip=True)
+            for p in content_el.find_all(["p", "h1", "h2", "h3", "li"])
+            if len(p.get_text(strip=True)) > 20
+        ]
+        text = "\n\n".join(paragraphs) if paragraphs else content_el.get_text("\n", strip=True)
+        title_el = soup.find("h1") or soup.find("title")
+        title = title_el.get_text(strip=True) if title_el else ""
+
+        return {
+            "url": url,
+            "title": title,
+            "text": text[:50000],
+            "word_count": len(text.split()),
+            "excerpt": text[:300] + ("..." if len(text) > 300 else ""),
+        }
+
+    async def suggest_selectors(self, url: str) -> dict[str, Any]:
+        """Heuristic CSS selector suggestions for price and title elements."""
+        soup = await self.fetch(url)
+        suggestions: list[dict[str, Any]] = []
+
+        def score_element(el: Any, selector: str, kind: str) -> None:
+            text = el.get_text(strip=True)
+            if kind == "price" and not re.search(r"\d", text):
+                return
+            if kind == "title" and len(text) < 3:
+                return
+            cls = el.get("class", [])
+            el_id = el.get("id", "")
+            confidence = 0.5
+            if kind == "price":
+                if re.search(r"[\$£€₹]", text):
+                    confidence += 0.2
+                if any(k in str(cls).lower() for k in ("price", "cost", "amount")):
+                    confidence += 0.15
+                if el.get("itemprop") == "price":
+                    confidence += 0.25
+            else:
+                if el.name == "h1":
+                    confidence += 0.3
+                if el.get("itemprop") == "name":
+                    confidence += 0.2
+                if any(k in str(cls).lower() for k in ("title", "product", "name")):
+                    confidence += 0.1
+
+            suggestions.append({
+                "selector": selector,
+                "kind": kind,
+                "sample_text": text[:80],
+                "confidence": round(min(confidence, 0.99), 2),
+                "tag": el.name,
+                "class": " ".join(cls) if isinstance(cls, list) else cls,
+                "id": el_id or None,
+            })
+
+        for selector in DEFAULT_PRICE_SELECTORS:
+            for el in soup.select(selector)[:2]:
+                score_element(el, selector, "price")
+
+        for selector in DEFAULT_TITLE_SELECTORS:
+            for el in soup.select(selector)[:2]:
+                score_element(el, selector, "title")
+
+        for el in soup.find_all(attrs={"class": True}):
+            classes = el.get("class", [])
+            if not isinstance(classes, list):
+                continue
+            for cls in classes:
+                cls_lower = cls.lower()
+                if any(k in cls_lower for k in ("price", "cost", "amount")):
+                    sel = f".{cls}"
+                    if sel not in {s["selector"] for s in suggestions}:
+                        score_element(el, sel, "price")
+                if any(k in cls_lower for k in ("title", "product-name", "product_title")):
+                    sel = f".{cls}"
+                    if sel not in {s["selector"] for s in suggestions}:
+                        score_element(el, sel, "title")
+
+        suggestions.sort(key=lambda s: s["confidence"], reverse=True)
+        unique: list[dict[str, Any]] = []
+        seen_keys: set[str] = set()
+        for s in suggestions:
+            key = f"{s['kind']}:{s['selector']}"
+            if key not in seen_keys:
+                seen_keys.add(key)
+                unique.append(s)
+
+        return {
+            "url": url,
+            "price_selectors": [s for s in unique if s["kind"] == "price"][:8],
+            "title_selectors": [s for s in unique if s["kind"] == "title"][:8],
+            "recommended_price": next(
+                (s["selector"] for s in unique if s["kind"] == "price"), None
+            ),
+            "recommended_title": next(
+                (s["selector"] for s in unique if s["kind"] == "title"), None
+            ),
+        }

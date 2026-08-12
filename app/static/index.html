@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Scraper Pro</title>
+  <title>Web Scraper Pro — Engineered for Reliability at Scale</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@
         </div>
         <div>
           <h1>Web Scraper Pro</h1>
-          <p>Industry Data Platform</p>
+          <p>Engineered for reliability at scale</p>
         </div>
       </div>
 
@@ -76,6 +76,11 @@
                   <option value="links">🔗 Link Extraction</option>
                   <option value="tables">📊 Table Extraction</option>
                   <option value="selectors">🎯 Custom CSS Selectors</option>
+                  <option value="sitemap">🗺️ Sitemap Crawl — extract all URLs</option>
+                  <option value="email_extract">📧 Email Extract — find emails on page</option>
+                  <option value="json_ld">📦 JSON-LD — structured schema.org data</option>
+                  <option value="social_meta">📱 Social Meta — Open Graph & Twitter cards</option>
+                  <option value="readability">📰 Readability — clean article text</option>
                 </select>
                 <p id="mode-description" class="mode-description"></p>
               </div>
@@ -91,13 +96,21 @@
                   <textarea id="compare-urls" rows="6" placeholder="https://store-a.com/product&#10;https://store-b.com/product"></textarea>
                   <div class="form-row-inline">
                     <button type="button" id="load-example-urls-btn" class="btn btn-ghost btn-sm">Load example</button>
+                    <label class="btn btn-ghost btn-sm csv-upload-btn">
+                      Import CSV
+                      <input type="file" id="csv-import" accept=".csv,text/csv" hidden>
+                    </label>
                     <span class="form-hint subtle">Demo uses books.toscrape.com</span>
                   </div>
                 </div>
 
                 <div class="form-group">
                   <label for="price-selector">Step 2 — CSS selector for the price</label>
-                  <input type="text" id="price-selector" placeholder=".price_color">
+                  <div class="url-row">
+                    <input type="text" id="price-selector" placeholder=".price_color">
+                    <button type="button" id="suggest-selectors-btn" class="btn btn-ghost btn-sm">✨ Smart hints</button>
+                  </div>
+                  <div id="selector-hints" class="selector-hints hidden"></div>
                   <p class="form-hint subtle">
                     Right-click price → Inspect → copy class (e.g. <code>.price</code>, <code>[itemprop="price"]</code>)
                   </p>
@@ -125,6 +138,21 @@
                 <textarea id="selectors" rows="3" placeholder="h1.title&#10;.content p"></textarea>
               </div>
 
+              <div class="form-group hidden" id="batch-meta-group">
+                <label for="batch-meta-urls">Batch URLs (one per line or CSV import)</label>
+                <textarea id="batch-meta-urls" rows="4" placeholder="https://example.com/page1&#10;https://example.com/page2"></textarea>
+                <div class="form-row-inline">
+                  <label class="btn btn-ghost btn-sm csv-upload-btn">
+                    Import CSV
+                    <input type="file" id="meta-csv-import" accept=".csv,text/csv" hidden>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group hidden" id="max-urls-group">
+                <label for="max-urls">Max URLs to extract</label>
+                <input type="number" id="max-urls" min="1" max="5000" placeholder="500">
+              </div>
               <div class="form-row">
                 <div class="form-group" id="pages-group">
                   <label for="max-pages">Max Pages</label>
@@ -138,10 +166,11 @@
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary" id="submit-btn">
+              <button type="submit" class="btn btn-primary" id="submit-btn" title="Ctrl+Enter to submit">
                 <span class="btn-text">Compare Prices</span>
                 <span class="btn-loader hidden"></span>
               </button>
+              <p class="form-hint subtle keyboard-hint">Tip: Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to submit</p>
             </form>
           </div>
 
@@ -217,11 +246,12 @@
           <p>Real-time platform status and security configuration</p>
         </header>
         <div id="health-dashboard" class="health-grid">
-          <div class="health-card glass-panel loading-card">
-            <div class="health-spinner"></div>
-            <p>Loading system status...</p>
+          <div class="health-card glass-panel skeleton-card">
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
           </div>
         </div>
+        <div id="stats-dashboard" class="health-grid hidden"></div>
       </section>
 
       <!-- Settings View -->
