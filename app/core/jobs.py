@@ -11,10 +11,23 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.scraper import AsyncWebScraper, ScraperError
+from app.core.webhooks import notify_webhook
+from app.db.database import safe_commit
 from app.db.models import JobRecord, ResultRecord, utcnow
 from app.models.schemas import JobStatus, ScrapeMode, ScrapeRequest
 
 logger = logging.getLogger(__name__)
+
+_start_time: float | None = None
+
+
+def get_uptime_seconds() -> float:
+    import time
+
+    global _start_time
+    if _start_time is None:
+        _start_time = time.monotonic()
+    return time.monotonic() - _start_time
 
 
 def _count_items(data: Any) -> int:
@@ -35,6 +48,10 @@ class JobManager:
         self._semaphore = asyncio.Semaphore(self.settings.max_concurrent_jobs)
         self._running: dict[str, asyncio.Task] = {}
         self._lock = asyncio.Lock()
+
+    @property
+    def active_job_count(self) -> int:
+        return len(self._running)
 
     def create_job_record(self, db: Session, request: ScrapeRequest) -> JobRecord:
         job_id = str(uuid.uuid4())
@@ -68,7 +85,7 @@ class JobManager:
             config=config,
         )
         db.add(record)
-        db.commit()
+        safe_commit(db)
         db.refresh(record)
         return record
 
@@ -108,7 +125,7 @@ class JobManager:
         job.updated_at = utcnow()
         if completed:
             job.completed_at = utcnow()
-        db.commit()
+        safe_commit(db)
 
     def _save_result(self, db: Session, job_id: str, data: Any) -> None:
         count = _count_items(data) if isinstance(data, list) else 1
@@ -118,7 +135,25 @@ class JobManager:
             existing.item_count = count
         else:
             db.add(ResultRecord(job_id=job_id, data=data, item_count=count))
-        db.commit()
+        safe_commit(db)
+
+    def build_request_from_job(self, job: JobRecord) -> ScrapeRequest:
+        config = job.config or {}
+        return ScrapeRequest(
+            mode=ScrapeMode(job.mode),
+            url=job.url,
+            urls=config.get("urls") or [],
+            selectors=config.get("selectors") or [],
+            price_selector=config.get("price_selector"),
+            product_label=config.get("product_label"),
+            max_pages=config.get("max_pages"),
+            same_domain=config.get("same_domain", True),
+            delay=config.get("delay"),
+            timeout=config.get("timeout"),
+            retries=config.get("retries"),
+            user_agent=config.get("user_agent"),
+            check_robots=config.get("check_robots"),
+        )
 
     async def enqueue(self, db: Session, job: JobRecord, request: ScrapeRequest) -> None:
         async with self._lock:
@@ -146,6 +181,7 @@ class JobManager:
                     retries=config.get("retries", self.settings.default_retries),
                     user_agent=config.get("user_agent"),
                     check_robots=config.get("check_robots", True),
+                    allow_private_urls=self.settings.allow_private_urls,
                 )
 
                 async def on_progress(page: int, items: int) -> None:
@@ -209,6 +245,15 @@ class JobManager:
                 )
                 logger.info("Job %s completed with %d items", job_id, item_count)
 
+                if self.settings.webhook_url:
+                    await notify_webhook(
+                        self.settings.webhook_url,
+                        job_id=job_id,
+                        status=JobStatus.COMPLETED.value,
+                        mode=job.mode,
+                        item_count=item_count,
+                    )
+
             except ScraperError as exc:
                 logger.error("Job %s failed: %s", job_id, exc)
                 job = self.get_job(db, job_id)
@@ -220,6 +265,14 @@ class JobManager:
                         error=str(exc),
                         completed=True,
                     )
+                    if self.settings.webhook_url:
+                        await notify_webhook(
+                            self.settings.webhook_url,
+                            job_id=job_id,
+                            status=JobStatus.FAILED.value,
+                            mode=job.mode,
+                            error=str(exc),
+                        )
             except Exception as exc:
                 logger.exception("Job %s unexpected error", job_id)
                 job = self.get_job(db, job_id)
@@ -231,6 +284,14 @@ class JobManager:
                         error=f"Internal error: {exc}",
                         completed=True,
                     )
+                    if self.settings.webhook_url:
+                        await notify_webhook(
+                            self.settings.webhook_url,
+                            job_id=job_id,
+                            status=JobStatus.FAILED.value,
+                            mode=job.mode,
+                            error=str(exc),
+                        )
             finally:
                 db.close()
                 async with self._lock:

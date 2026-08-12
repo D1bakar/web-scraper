@@ -22,9 +22,9 @@
 
 ---
 
-Web Scraper Pro transforms polite, structured web extraction into a **deployment-ready product**. Launch scrape jobs from a modern dashboard or REST API, track progress in real time, export results as JSON/CSV/Excel, and persist job history in SQLite — all with robots.txt compliance, rate limiting, and retries built in.
+Web Scraper Pro transforms polite, structured web extraction into a **deployment-ready product**. Launch scrape jobs from a premium liquid-glass dashboard or REST API, track progress in real time, export results as JSON/CSV/Excel, and persist job history in SQLite — with robots.txt compliance, SSRF protection, rate limiting, and optional API key auth built in.
 
-> **Industry-ready by design** — FastAPI backend, OpenAPI docs, Docker image, GitHub Actions CI, and cloud Procfile. See [docs/WHY.md](docs/WHY.md) for the enterprise value proposition.
+> **v2.1** — Liquid glass UI overhaul, defense-in-depth security, job retry, health dashboard, webhook notifications, and SQLite concurrency hardening.
 
 ---
 
@@ -33,12 +33,13 @@ Web Scraper Pro transforms polite, structured web extraction into a **deployment
 | Category | Highlights |
 |----------|------------|
 | **API** | Async FastAPI REST endpoints with OpenAPI at [`/api/docs`](#live-api-documentation) |
-| **UI** | Premium dark glass-morphism dashboard at `/` |
-| **Modes** | **Price Compare**, quotes demo, page metadata, links, tables, custom CSS selectors |
-| **Jobs** | Async queue with SQLite persistence (structured for Redis/Celery scale-up) |
-| **Compliance** | Automatic robots.txt checks before every scrape |
+| **UI** | Premium **liquid glass** dashboard — animated mesh background, frosted panels, fluid micro-animations |
+| **Modes** | **Price Compare** (featured), quotes demo, page metadata, links, tables, custom CSS selectors |
+| **Jobs** | Async queue with SQLite WAL persistence, retry failed jobs, optional webhook on complete |
+| **Security** | SSRF protection, optional API key auth, rate limiting, CSP headers, input sanitization |
+| **Compliance** | Automatic robots.txt checks with graceful 403/429 error messages |
 | **Export** | JSON, CSV, Excel (openpyxl) download endpoints |
-| **Ops** | Docker, health checks, env-based config, CI/CD pipeline |
+| **Ops** | Health dashboard, Docker, env-based config, CI/CD pipeline |
 | **CLI** | Optional scripting interface via `cli.py` |
 
 ---
@@ -144,26 +145,15 @@ python cli.py tables --url https://example.com
 
 ## Dashboard Preview
 
-The built-in SPA provides job configuration, live status, history, and export — no separate frontend repo required.
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  ⚡ Web Scraper Pro          │  New Scrape Job                      │
-│  Data Extraction Platform    │  Configure and launch extraction     │
-│                              │                                      │
-│  ▶ New Scrape                │  Scrape Mode  [ Page Metadata    ▼ ] │
-│    Job History               │  Target URL   [ https://...        ] │
-│    Settings                  │  Max Pages    [ 10 ]  ☑ Same domain  │
-│                              │                                      │
-│  API Docs  ● healthy         │  [ Start Scraping ]                  │
-└─────────────────────────────────────────────────────────────────────┘
-```
+The built-in SPA features a **liquid glass** aesthetic with animated gradient mesh backgrounds, floating orbs, frosted glass panels with refractive highlights, and fluid micro-animations throughout.
 
 | View | Description |
 |------|-------------|
-| **New Scrape** | Configure mode, URL, selectors, and launch jobs |
-| **Job History** | Browse past jobs with status, progress, and timestamps |
-| **Results Export** | Download completed jobs as JSON, CSV, or Excel |
+| **New Scrape** | Price Compare prominently featured; configure mode, URLs, selectors, and launch jobs |
+| **Job History** | Browse past jobs — view results, inspect errors, **retry failed jobs** |
+| **System Health** | Real-time status: uptime, active jobs, SSRF protection, rate limits, database |
+| **Settings** | Configure delay, timeout, retries, user-agent, robots.txt compliance |
+| **Results Export** | Download completed jobs as JSON, CSV, or Excel with search/filter |
 
 ---
 
@@ -182,8 +172,10 @@ The built-in SPA provides job configuration, live status, history, and export �
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/health` | Health check for deployment |
+| `GET` | `/api/health/detail` | Detailed system status dashboard |
 | `GET` | `/api/settings` | Default scraping settings |
 | `POST` | `/api/jobs` | Create a scrape job |
+| `POST` | `/api/jobs/{id}/retry` | Retry a failed job |
 | `GET` | `/api/jobs` | List job history |
 | `GET` | `/api/jobs/{id}` | Get job status |
 | `GET` | `/api/jobs/{id}/results` | Get scrape results |
@@ -233,6 +225,7 @@ docker run -p 8000:8000 -v scraper-data:/app/data web-scraper-pro
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `ENVIRONMENT` | `development` | Set to `production` for HSTS and strict CORS |
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8000` | Server port |
 | `DATABASE_URL` | `sqlite:///./data/scraper.db` | SQLite database path |
@@ -240,7 +233,36 @@ docker run -p 8000:8000 -v scraper-data:/app/data web-scraper-pro
 | `DEFAULT_TIMEOUT` | `15` | Request timeout (seconds) |
 | `DEFAULT_RETRIES` | `3` | Retry attempts on failure |
 | `CHECK_ROBOTS_TXT` | `true` | Enforce robots.txt compliance |
+| `ALLOW_PRIVATE_URLS` | `false` | Allow scraping localhost/private IPs (dev only) |
+| `API_KEY` | — | Optional API key (requires `X-API-Key` header) |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed origins (production) |
+| `RATE_LIMIT_PER_MINUTE` | `60` | API rate limit per IP |
+| `MAX_REQUEST_BODY_BYTES` | `1048576` | Max request body size (1 MB) |
+| `WEBHOOK_URL` | — | Optional webhook POST on job complete/fail |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |
+
+---
+
+## Security
+
+Web Scraper Pro implements defense-in-depth security appropriate for a self-hosted scraping tool. See [SECURITY.md](SECURITY.md) for the full security model.
+
+| Control | Description |
+|---------|-------------|
+| **SSRF Protection** | Blocks private/reserved IP ranges unless `ALLOW_PRIVATE_URLS=true` |
+| **API Key Auth** | Optional via `API_KEY` env — requires `X-API-Key` header |
+| **Rate Limiting** | Per-IP sliding window (default 60 req/min) |
+| **Security Headers** | CSP, X-Frame-Options, nosniff, HSTS in production |
+| **Input Validation** | URL, selector, and body size validation on all inputs |
+| **CORS** | Restricted to configured origins in production |
+| **SQLite WAL** | WAL mode + busy timeout for concurrent job safety |
+
+**Production checklist:**
+1. Set `ENVIRONMENT=production`
+2. Set a strong `API_KEY`
+3. Configure `CORS_ORIGINS` to your domain
+4. Place behind a reverse proxy with TLS
+5. Do not expose the dashboard publicly without auth
 
 ---
 

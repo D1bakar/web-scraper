@@ -90,7 +90,6 @@
 
   const MAX_COMPARE_URLS = 50;
 
-  // --- Settings (localStorage) ---
   const SETTINGS_KEY = 'scraper_settings';
 
   function loadSettings() {
@@ -100,6 +99,7 @@
       retries: 3,
       user_agent: '',
       check_robots: true,
+      api_key: '',
     };
     try {
       return { ...defaults, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
@@ -121,15 +121,30 @@
     $('#setting-robots').checked = s.check_robots;
   }
 
+  function apiHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const apiKey = loadSettings().api_key;
+    if (apiKey) headers['X-API-Key'] = apiKey;
+    return headers;
+  }
+
   function formatJobError(error) {
     if (!error) return 'Job failed';
-    if (error.includes('ROBOTS_BLOCKED') || error.toLowerCase().includes('robots.txt')) {
-      return 'Blocked by robots.txt. Try Quotes demo or turn off "Check robots.txt" in Settings.';
+    const map = {
+      ROBOTS_BLOCKED: 'Blocked by robots.txt. Try Quotes demo or turn off "Check robots.txt" in Settings.',
+      ACCESS_DENIED: 'Site blocked access (403). Try Quotes demo or https://quotes.toscrape.com',
+      RATE_LIMITED: 'Rate limited by target site (429). Increase delay and retry later.',
+      TIMEOUT: 'Request timed out. Increase timeout in Settings.',
+      NOT_FOUND: 'Page not found (404). Check the URL.',
+      SSRF_BLOCKED: 'URL blocked for security (private/reserved IP).',
+    };
+    for (const [key, msg] of Object.entries(map)) {
+      if (error.includes(key)) return msg;
     }
-    if (error.includes('ACCESS_DENIED') || error.includes('403')) {
-      return 'Site blocked access (403). Try Quotes demo or https://quotes.toscrape.com';
+    if (error.toLowerCase().includes('robots.txt')) {
+      return map.ROBOTS_BLOCKED;
     }
-    return error.replace(/^(ROBOTS_BLOCKED|ACCESS_DENIED):\s*/, '');
+    return error.replace(/^(ROBOTS_BLOCKED|ACCESS_DENIED|RATE_LIMITED|TIMEOUT|NOT_FOUND|SSRF_BLOCKED):\s*/, '');
   }
 
   function showRobotsHint() {
@@ -142,7 +157,21 @@
     el.className = `toast toast-${type}`;
     el.textContent = message;
     $('#toast-container').appendChild(el);
-    setTimeout(() => el.remove(), 4000);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(110%)';
+        setTimeout(() => el.remove(), 300);
+      }, 4000);
+    });
+  }
+
+  function calcProgress(job) {
+    if (job.status === 'completed') return 100;
+    if (job.mode === 'price_compare') return Math.min(Math.max(job.progress, 5), 99);
+    if (job.progress > 0 && job.progress <= 100) return job.progress;
+    if (job.status === 'running') return Math.min(Math.max(job.progress * 8, 15), 85);
+    return 10;
   }
 
   // --- Navigation ---
@@ -154,6 +183,7 @@
       $$('.view').forEach((v) => v.classList.remove('active'));
       $(`#view-${view}`).classList.add('active');
       if (view === 'history') loadHistory();
+      if (view === 'health') loadHealthDashboard();
     });
   });
 
@@ -239,16 +269,54 @@
       const res = await fetch(`${API}/health`);
       const data = await res.json();
       if (data.status === 'healthy') {
-        badge.textContent = 'Online';
+        badge.innerHTML = '<span class="badge-dot"></span> Online';
         badge.className = 'badge badge-healthy';
       } else {
-        badge.textContent = 'Degraded';
+        badge.innerHTML = '<span class="badge-dot"></span> Degraded';
         badge.className = 'badge badge-pending';
       }
     } catch {
-      badge.textContent = 'Offline';
+      badge.innerHTML = '<span class="badge-dot"></span> Offline';
       badge.className = 'badge badge-error';
     }
+  }
+
+  async function loadHealthDashboard() {
+    const container = $('#health-dashboard');
+    container.innerHTML = '<div class="health-card glass-panel loading-card"><div class="health-spinner"></div><p>Loading system status...</p></div>';
+
+    try {
+      const res = await fetch(`${API}/health/detail`, { headers: apiHeaders() });
+      const data = await res.json();
+
+      const cards = [
+        { label: 'Status', value: data.status.toUpperCase(), status: data.status === 'healthy' ? 'ok' : 'warn' },
+        { label: 'Version', value: data.version, status: 'ok' },
+        { label: 'Database', value: data.database, status: data.database === 'connected' ? 'ok' : 'err' },
+        { label: 'Uptime', value: formatUptime(data.uptime_seconds), status: 'ok' },
+        { label: 'Active Jobs', value: `${data.active_jobs} / ${data.max_concurrent_jobs}`, status: data.active_jobs < data.max_concurrent_jobs ? 'ok' : 'warn' },
+        { label: 'Environment', value: data.environment, status: 'ok' },
+        { label: 'SSRF Protection', value: data.ssrf_protection ? 'Enabled' : 'Disabled', status: data.ssrf_protection ? 'ok' : 'warn' },
+        { label: 'API Key Auth', value: data.api_key_required ? 'Required' : 'Optional', status: data.api_key_required ? 'ok' : 'warn' },
+        { label: 'Rate Limit', value: `${data.rate_limit_per_minute}/min`, status: 'ok' },
+      ];
+
+      container.innerHTML = cards.map((c, i) => `
+        <div class="health-card glass-panel slide-up" style="animation-delay:${i * 0.05}s">
+          <div class="health-card-label">${c.label}</div>
+          <div class="health-card-value">${escapeHtml(String(c.value))}</div>
+          <div class="health-card-status ${c.status}">${c.status === 'ok' ? '● Normal' : c.status === 'warn' ? '● Warning' : '● Error'}</div>
+        </div>
+      `).join('');
+    } catch {
+      container.innerHTML = '<div class="health-card glass-panel"><p style="color:var(--error)">Failed to load health data. Is the server running?</p></div>';
+    }
+  }
+
+  function formatUptime(seconds) {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
   }
 
   // --- Scrape form ---
@@ -314,17 +382,19 @@
     try {
       const res = await fetch(`${API}/jobs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify(body),
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Failed to create job');
+        const detail = err.detail;
+        throw new Error(Array.isArray(detail) ? detail.map((d) => d.msg || d).join(', ') : detail || 'Failed to create job');
       }
       const data = await res.json();
       currentJobId = data.job_id;
       currentJobMode = mode;
       toast('Job queued successfully', 'success');
+      $('#results-section').classList.add('hidden');
       startPolling(currentJobId);
     } catch (err) {
       toast(err.message, 'error');
@@ -344,7 +414,8 @@
 
   async function pollLiveStatus(jobId) {
     try {
-      const res = await fetch(`${API}/jobs/${jobId}`);
+      const res = await fetch(`${API}/jobs/${jobId}`, { headers: apiHeaders() });
+      if (!res.ok) return;
       const job = await res.json();
       renderLiveStatus(job);
 
@@ -377,7 +448,7 @@
       failed: 'status-failed',
     }[job.status] || '';
 
-    const progress = job.status === 'completed' ? 100 : Math.min(job.progress * 10, 90);
+    const progress = calcProgress(job);
 
     el.innerHTML = `
       <div class="status-active">
@@ -391,7 +462,7 @@
         </div>
         <div class="status-row">
           <span class="status-label">Status</span>
-          <span class="status-value ${statusClass}">${job.status.toUpperCase()}</span>
+          <span class="status-value ${statusClass} status-indicator">${job.status.toUpperCase()}</span>
         </div>
         <div class="status-row">
           <span class="status-label">Items</span>
@@ -399,18 +470,51 @@
         </div>
         ${job.error ? `<div class="status-row"><span class="status-label">Error</span><span class="status-value status-failed">${escapeHtml(formatJobError(job.error))}</span></div>` : ''}
         ${job.error && job.error.includes('ROBOTS_BLOCKED') ? `<div class="robots-help">Tip: Open <strong>Settings</strong> and uncheck "Check robots.txt", or use <strong>Quotes Demo</strong> mode.</div>` : ''}
+        ${job.status === 'failed' ? `<button class="btn btn-retry btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.__retryJob('${job.id}')">↻ Retry Job</button>` : ''}
         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
       </div>
     `;
   }
 
+  // --- Retry ---
+  window.__retryJob = async (jobId) => {
+    try {
+      const res = await fetch(`${API}/jobs/${jobId}/retry`, {
+        method: 'POST',
+        headers: apiHeaders(),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Retry failed');
+      }
+      const data = await res.json();
+      currentJobId = data.job_id;
+      toast('Retry job queued', 'success');
+      $$('.nav-item').forEach((b) => b.classList.remove('active'));
+      $$('.nav-item')[0].classList.add('active');
+      $$('.view').forEach((v) => v.classList.remove('active'));
+      $('#view-scrape').classList.add('active');
+      startPolling(data.job_id);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+
   // --- Results ---
   async function loadResults(jobId) {
-    const res = await fetch(`${API}/jobs/${jobId}/results`);
+    const res = await fetch(`${API}/jobs/${jobId}/results`, { headers: apiHeaders() });
+    if (!res.ok) {
+      toast('Failed to load results', 'error');
+      return;
+    }
     const data = await res.json();
     resultsData = normalizeResults(data.data, currentJobMode);
     renderResults(resultsData, currentJobMode);
-    $('#results-section').classList.remove('hidden');
+    const section = $('#results-section');
+    section.classList.remove('hidden');
+    section.classList.remove('reveal');
+    void section.offsetWidth;
+    section.classList.add('reveal');
     currentJobId = jobId;
   }
 
@@ -608,7 +712,10 @@
       )
       .join('');
 
-    $('#results-count').textContent = `${rows.length} site${rows.length !== 1 ? 's' : ''}`;
+    const countLabel = mode === 'price_compare'
+      ? `${rows.length} site${rows.length !== 1 ? 's' : ''}`
+      : `${rows.length} item${rows.length !== 1 ? 's' : ''}`;
+    $('#results-count').textContent = countLabel;
   }
 
   function flatten(val) {
@@ -653,7 +760,7 @@
   // --- History ---
   async function loadHistory() {
     try {
-      const res = await fetch(`${API}/jobs?limit=50`);
+      const res = await fetch(`${API}/jobs?limit=50`, { headers: apiHeaders() });
       const data = await res.json();
       const tbody = $('#history-table tbody');
 
@@ -674,7 +781,11 @@
           <td>${job.total_items}</td>
           <td>${formatDate(job.created_at)}</td>
           <td>
-            ${job.status === 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')">View</button>` : job.status === 'failed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')" title="${escapeHtml(formatJobError(job.error || ''))}">Details</button>` : '—'}
+            <div class="history-actions">
+              ${job.status === 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')">View</button>` : ''}
+              ${job.status === 'failed' ? `<button class="btn btn-ghost btn-sm" onclick="window.__viewJob('${job.id}')" title="${escapeHtml(formatJobError(job.error || ''))}">Details</button>` : ''}
+              ${job.status === 'failed' ? `<button class="btn btn-retry btn-sm" onclick="window.__retryJob('${job.id}')">↻ Retry</button>` : ''}
+            </div>
           </td>
         </tr>
       `
@@ -699,7 +810,7 @@
     $$('.view').forEach((v) => v.classList.remove('active'));
     $('#view-scrape').classList.add('active');
     currentJobId = jobId;
-    const res = await fetch(`${API}/jobs/${jobId}`);
+    const res = await fetch(`${API}/jobs/${jobId}`, { headers: apiHeaders() });
     const job = await res.json();
     currentJobMode = job.mode;
     renderLiveStatus(job);

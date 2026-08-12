@@ -13,6 +13,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from app.core.robots import RobotsChecker
+from app.core.security import SecurityError, validate_url_ssrf
 
 logger = logging.getLogger(__name__)
 
@@ -76,21 +77,25 @@ class AsyncWebScraper:
         retries: int = 3,
         user_agent: str | None = None,
         check_robots: bool = True,
+        allow_private_urls: bool = False,
     ):
         self.delay = delay
         self.timeout = timeout
         self.retries = retries
         self.user_agent = user_agent or (
-            "Mozilla/5.0 (compatible; WebScraperPro/2.0; "
+            "Mozilla/5.0 (compatible; WebScraperPro/2.1; "
             "+https://github.com/D1bakar/web-scraper)"
         )
         self.check_robots = check_robots
+        self.allow_private_urls = allow_private_urls
         self._robots = RobotsChecker(self.user_agent, timeout=timeout)
         self._headers = {**DEFAULT_HEADERS, "User-Agent": self.user_agent}
 
     async def fetch(self, url: str, client: httpx.AsyncClient | None = None) -> BeautifulSoup:
-        if not url.startswith(("http://", "https://")):
-            raise ScraperError(f"Invalid URL: {url}")
+        try:
+            url = validate_url_ssrf(url, allow_private=self.allow_private_urls)
+        except SecurityError as exc:
+            raise ScraperError(str(exc)) from exc
 
         if self.check_robots:
             allowed = await self._robots.is_allowed(url)
@@ -118,9 +123,35 @@ class AsyncWebScraper:
                     response = await client.get(url)
                     response.raise_for_status()
                     return BeautifulSoup(response.text, "lxml")
+                except httpx.HTTPStatusError as exc:
+                    last_error = exc
+                    status = exc.response.status_code
+                    if status == 403:
+                        raise ScraperError(
+                            "ACCESS_DENIED: This site blocked the request (HTTP 403). "
+                            "The server may forbid scrapers. Try Quotes demo or a scraper-friendly site."
+                        ) from exc
+                    if status == 429:
+                        raise ScraperError(
+                            "RATE_LIMITED: The site returned HTTP 429 (too many requests). "
+                            "Increase delay in Settings and retry later."
+                        ) from exc
+                    if status == 404:
+                        raise ScraperError(
+                            f"NOT_FOUND: Page not found (HTTP 404) at {url}"
+                        ) from exc
+                    logger.warning(
+                        "HTTP %d on attempt %d/%d for %s",
+                        status, attempt, self.retries, url,
+                    )
+                    if attempt < self.retries:
+                        await asyncio.sleep(min(attempt * 0.5, 2.0))
                 except httpx.HTTPError as exc:
                     last_error = exc
-                    logger.warning("Fetch attempt %d/%d failed for %s: %s", attempt, self.retries, url, exc)
+                    logger.warning(
+                        "Fetch attempt %d/%d failed for %s: %s",
+                        attempt, self.retries, url, exc,
+                    )
                     if attempt < self.retries:
                         await asyncio.sleep(min(attempt * 0.5, 2.0))
         finally:
@@ -133,7 +164,14 @@ class AsyncWebScraper:
                 "ACCESS_DENIED: This site blocked the request (HTTP 403). "
                 "The server may forbid scrapers. Try Quotes demo or a scraper-friendly site."
             ) from last_error
-        raise ScraperError(f"Failed to fetch {url} after {self.retries} attempts: {last_error}") from last_error
+        if "timeout" in err_msg.lower():
+            raise ScraperError(
+                f"TIMEOUT: Request timed out after {self.timeout}s. "
+                "Try increasing timeout in Settings."
+            ) from last_error
+        raise ScraperError(
+            f"Failed to fetch {url} after {self.retries} attempts: {last_error}"
+        ) from last_error
 
     async def scrape_quotes(
         self,

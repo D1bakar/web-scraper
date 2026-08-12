@@ -6,75 +6,100 @@
   <title>Web Scraper Pro</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+  <!-- Animated background -->
+  <div class="bg-mesh" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
   <div class="app">
-    <aside class="sidebar glass">
+    <aside class="sidebar glass-panel">
       <div class="brand">
-        <div class="brand-icon">⚡</div>
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
         <div>
           <h1>Web Scraper Pro</h1>
-          <p>Data Extraction Platform</p>
+          <p>Industry Data Platform</p>
         </div>
       </div>
+
       <nav class="nav">
-        <button class="nav-item active" data-view="scrape">New Scrape</button>
-        <button class="nav-item" data-view="history">Job History</button>
-        <button class="nav-item" data-view="settings">Settings</button>
+        <button class="nav-item active" data-view="scrape">
+          <span class="nav-icon">⚡</span> New Scrape
+        </button>
+        <button class="nav-item" data-view="history">
+          <span class="nav-icon">📋</span> Job History
+        </button>
+        <button class="nav-item" data-view="health">
+          <span class="nav-icon">💎</span> System Health
+        </button>
+        <button class="nav-item" data-view="settings">
+          <span class="nav-icon">⚙️</span> Settings
+        </button>
       </nav>
+
       <div class="sidebar-footer">
-        <a href="/api/docs" target="_blank" rel="noopener">API Docs</a>
-        <span id="health-badge" class="badge badge-pending">Checking...</span>
+        <a href="/api/docs" target="_blank" rel="noopener" class="api-link">API Docs →</a>
+        <div id="health-badge" class="badge badge-pending pulse">
+          <span class="badge-dot"></span> Checking...
+        </div>
       </div>
     </aside>
 
     <main class="main">
       <!-- Scrape View -->
       <section id="view-scrape" class="view active">
-        <header class="page-header">
+        <header class="page-header fade-in">
+          <div class="header-badge">Featured</div>
           <h2>New Scrape Job</h2>
           <p id="page-subtitle">Compare prices across websites — or choose an advanced scrape mode</p>
         </header>
 
         <div class="grid-2">
-          <div class="card glass">
+          <div class="card glass-panel slide-up">
             <form id="scrape-form">
               <div class="form-group">
                 <label for="mode">What do you want to do?</label>
                 <select id="mode" name="mode" required>
-                  <option value="price_compare">Price Compare — compare product prices</option>
-                  <option value="quotes">Quotes Demo — recommended start</option>
-                  <option value="meta">Page Metadata</option>
-                  <option value="links">Link Extraction</option>
-                  <option value="tables">Table Extraction</option>
-                  <option value="selectors">Custom CSS Selectors</option>
+                  <option value="price_compare">💰 Price Compare — compare product prices</option>
+                  <option value="quotes">📖 Quotes Demo — recommended start</option>
+                  <option value="meta">🏷️ Page Metadata</option>
+                  <option value="links">🔗 Link Extraction</option>
+                  <option value="tables">📊 Table Extraction</option>
+                  <option value="selectors">🎯 Custom CSS Selectors</option>
                 </select>
                 <p id="mode-description" class="mode-description"></p>
               </div>
 
               <div id="price-compare-panel">
-                <div class="price-compare-banner">
+                <div class="price-compare-banner glass-highlight">
                   <strong>Up to 50 URLs per run.</strong>
-                  For comparing across 1000+ sites, export results and combine in a spreadsheet — run multiple batches of 50.
+                  Paste product page URLs, set a CSS price selector, and get a sorted comparison table.
                 </div>
 
                 <div class="form-group">
                   <label for="compare-urls">Step 1 — Paste product page URLs (one per line)</label>
-                  <textarea id="compare-urls" rows="6" placeholder="https://store-a.com/iphone-16&#10;https://store-b.com/iphone-16"></textarea>
+                  <textarea id="compare-urls" rows="6" placeholder="https://store-a.com/product&#10;https://store-b.com/product"></textarea>
                   <div class="form-row-inline">
                     <button type="button" id="load-example-urls-btn" class="btn btn-ghost btn-sm">Load example</button>
-                    <span class="form-hint">Demo uses books.toscrape.com (scraper-friendly practice site).</span>
+                    <span class="form-hint subtle">Demo uses books.toscrape.com</span>
                   </div>
                 </div>
 
                 <div class="form-group">
                   <label for="price-selector">Step 2 — CSS selector for the price</label>
                   <input type="text" id="price-selector" placeholder=".price_color">
-                  <p class="form-hint">
-                    Right-click the price on the website → <strong>Inspect</strong> → copy the CSS class
-                    (e.g. <code>.price</code>, <code>[itemprop="price"]</code>). Leave blank to try common selectors automatically.
+                  <p class="form-hint subtle">
+                    Right-click price → Inspect → copy class (e.g. <code>.price</code>, <code>[itemprop="price"]</code>)
                   </p>
                 </div>
 
@@ -91,8 +116,7 @@
                   <button type="button" id="try-example-btn" class="btn btn-ghost btn-sm try-example-btn hidden">Try example</button>
                 </div>
                 <p id="robots-hint" class="form-hint hidden">
-                  Some sites (e.g. ChatGPT, Google) block scraping via robots.txt.
-                  Use <strong>Quotes Demo</strong> or disable robots check in Settings.
+                  Some sites block scraping via robots.txt. Use <strong>Quotes Demo</strong> or disable robots check in Settings.
                 </p>
               </div>
 
@@ -121,11 +145,13 @@
             </form>
           </div>
 
-          <div class="card glass">
+          <div class="card glass-panel slide-up delay-1">
             <h3 class="card-title">Live Status</h3>
             <div id="live-status" class="live-status empty">
               <div class="status-placeholder">
-                <div class="status-icon">📡</div>
+                <div class="status-icon-ring">
+                  <div class="status-icon">📡</div>
+                </div>
                 <p>No active job</p>
                 <span>Submit a scrape to see live progress</span>
               </div>
@@ -133,7 +159,7 @@
           </div>
         </div>
 
-        <div class="card glass results-card hidden" id="results-section">
+        <div class="card glass-panel results-card hidden reveal" id="results-section">
           <div id="results-summary" class="results-summary hidden"></div>
           <div class="results-header">
             <h3 class="card-title">Results</h3>
@@ -160,11 +186,11 @@
 
       <!-- History View -->
       <section id="view-history" class="view">
-        <header class="page-header">
+        <header class="page-header fade-in">
           <h2>Job History</h2>
-          <p>Past scrape jobs and their status</p>
+          <p>Past scrape jobs — view results or retry failed jobs</p>
         </header>
-        <div class="card glass">
+        <div class="card glass-panel slide-up">
           <div class="table-wrap">
             <table id="history-table">
               <thead>
@@ -184,13 +210,27 @@
         </div>
       </section>
 
+      <!-- Health Dashboard -->
+      <section id="view-health" class="view">
+        <header class="page-header fade-in">
+          <h2>System Health</h2>
+          <p>Real-time platform status and security configuration</p>
+        </header>
+        <div id="health-dashboard" class="health-grid">
+          <div class="health-card glass-panel loading-card">
+            <div class="health-spinner"></div>
+            <p>Loading system status...</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Settings View -->
       <section id="view-settings" class="view">
-        <header class="page-header">
+        <header class="page-header fade-in">
           <h2>Settings</h2>
           <p>Configure scraping defaults for new jobs</p>
         </header>
-        <div class="card glass settings-card">
+        <div class="card glass-panel settings-card slide-up">
           <form id="settings-form">
             <div class="form-row">
               <div class="form-group">

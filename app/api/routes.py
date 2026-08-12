@@ -9,11 +9,12 @@ from sqlalchemy.orm import Session
 from app import __version__
 from app.core.config import get_settings
 from app.core.exporters import prepare_export
-from app.core.jobs import job_manager
-from app.db.database import get_db
+from app.core.jobs import get_uptime_seconds, job_manager
+from app.db.database import check_db_connection, get_db
 from app.db.models import JobRecord
 from app.models.schemas import (
     MAX_PRICE_COMPARE_URLS,
+    HealthDetailResponse,
     HealthResponse,
     JobCreateResponse,
     JobListResponse,
@@ -69,14 +70,27 @@ def _validate_request(request: ScrapeRequest) -> None:
 
 
 @router.get("/health", response_model=HealthResponse, tags=["System"])
-def health_check(db: Session = Depends(get_db)) -> HealthResponse:
-    try:
-        db.execute(__import__("sqlalchemy").text("SELECT 1"))
-        db_status = "connected"
-    except Exception:
-        db_status = "error"
+def health_check() -> HealthResponse:
+    db_status = "connected" if check_db_connection() else "error"
+    return HealthResponse(status="healthy" if db_status == "connected" else "degraded", version=__version__, database=db_status)
 
-    return HealthResponse(status="healthy", version=__version__, database=db_status)
+
+@router.get("/health/detail", response_model=HealthDetailResponse, tags=["System"])
+def health_detail() -> HealthDetailResponse:
+    settings = get_settings()
+    db_ok = check_db_connection()
+    return HealthDetailResponse(
+        status="healthy" if db_ok else "degraded",
+        version=__version__,
+        database="connected" if db_ok else "error",
+        uptime_seconds=round(get_uptime_seconds(), 1),
+        active_jobs=job_manager.active_job_count,
+        max_concurrent_jobs=settings.max_concurrent_jobs,
+        environment=settings.environment,
+        api_key_required=bool(settings.api_key),
+        ssrf_protection=not settings.allow_private_urls,
+        rate_limit_per_minute=settings.rate_limit_per_minute,
+    )
 
 
 @router.get("/settings", response_model=SettingsResponse, tags=["System"])
@@ -89,6 +103,8 @@ def get_app_settings() -> SettingsResponse:
         default_user_agent=settings.default_user_agent,
         check_robots_txt=settings.check_robots_txt,
         max_concurrent_jobs=settings.max_concurrent_jobs,
+        rate_limit_per_minute=settings.rate_limit_per_minute,
+        api_key_required=bool(settings.api_key),
     )
 
 
@@ -105,6 +121,31 @@ async def create_job(
         job_id=job.id,
         status=JobStatus.PENDING,
         message=f"Scrape job queued ({request.mode.value})",
+    )
+
+
+@router.post("/jobs/{job_id}/retry", response_model=JobCreateResponse, status_code=202, tags=["Jobs"])
+async def retry_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> JobCreateResponse:
+    original = job_manager.get_job(db, job_id)
+    if not original:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if original.status not in (JobStatus.FAILED.value, JobStatus.CANCELLED.value):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Only failed or cancelled jobs can be retried (current: {original.status})",
+        )
+
+    request = job_manager.build_request_from_job(original)
+    job = job_manager.create_job_record(db, request)
+    background_tasks.add_task(job_manager.enqueue, db, job, request)
+    return JobCreateResponse(
+        job_id=job.id,
+        status=JobStatus.PENDING,
+        message=f"Retry job queued from {job_id[:8]}",
     )
 
 
@@ -162,5 +203,8 @@ def export_results(
     return Response(
         content=content,
         media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
     )

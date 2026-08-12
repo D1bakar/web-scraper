@@ -1,0 +1,133 @@
+"""Security middleware: headers, rate limiting, request size, API key auth."""
+
+from __future__ import annotations
+
+import logging
+import time
+from collections import defaultdict
+from collections.abc import Callable
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+
+from app.core.config import Settings
+
+logger = logging.getLogger(__name__)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add defense-in-depth HTTP security headers."""
+
+    def __init__(self, app, settings: Settings):
+        super().__init__(app)
+        self.settings = settings
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["X-XSS-Protection"] = "0"
+
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'"
+        )
+        response.headers["Content-Security-Policy"] = csp
+
+        if self.settings.is_production:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        return response
+
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """Reject oversized request bodies."""
+
+    def __init__(self, app, max_bytes: int):
+        super().__init__(app)
+        self.max_bytes = max_bytes
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > self.max_bytes:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"detail": f"Request body exceeds {self.max_bytes} bytes"},
+                    )
+            except ValueError:
+                pass
+        return await call_next(request)
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Simple in-memory sliding-window rate limiter per client IP."""
+
+    def __init__(self, app, requests_per_minute: int):
+        super().__init__(app)
+        self.limit = max(requests_per_minute, 1)
+        self.window = 60.0
+        self._hits: dict[str, list[float]] = defaultdict(list)
+
+    def _client_ip(self, request: Request) -> str:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        if request.client:
+            return request.client.host
+        return "unknown"
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        if not request.url.path.startswith("/api/"):
+            return await call_next(request)
+
+        now = time.monotonic()
+        ip = self._client_ip(request)
+        window_start = now - self.window
+
+        hits = [t for t in self._hits[ip] if t > window_start]
+        if len(hits) >= self.limit:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit exceeded. Try again later."},
+                headers={"Retry-After": "60"},
+            )
+        hits.append(now)
+        self._hits[ip] = hits
+
+        return await call_next(request)
+
+
+class APIKeyMiddleware(BaseHTTPMiddleware):
+    """Optional API key authentication via X-API-Key header."""
+
+    EXEMPT_PATHS = {"/api/health", "/api/docs", "/api/redoc", "/api/openapi.json"}
+
+    def __init__(self, app, api_key: str):
+        super().__init__(app)
+        self.api_key = api_key
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        if not request.url.path.startswith("/api/"):
+            return await call_next(request)
+
+        if request.url.path in self.EXEMPT_PATHS:
+            return await call_next(request)
+
+        provided = request.headers.get("x-api-key", "")
+        if provided != self.api_key:
+            logger.warning("Unauthorized API access attempt from %s", request.client)
+            return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+
+        return await call_next(request)

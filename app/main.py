@@ -14,6 +14,12 @@ from app import __version__
 from app.api.routes import router
 from app.core.config import get_settings
 from app.core.logging_config import setup_logging
+from app.core.middleware import (
+    APIKeyMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.db.database import init_db
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -42,11 +48,18 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.get_cors_origins(),
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "X-API-Key"],
     )
+
+    app.add_middleware(SecurityHeadersMiddleware, settings=settings)
+    app.add_middleware(RequestSizeLimitMiddleware, max_bytes=settings.max_request_body_bytes)
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=settings.rate_limit_per_minute)
+
+    if settings.api_key:
+        app.add_middleware(APIKeyMiddleware, api_key=settings.api_key)
 
     app.include_router(router, prefix="/api")
 
