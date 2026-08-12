@@ -15,6 +15,7 @@
       description:
         'Compare product prices across multiple websites. Paste one product page URL per line, set a CSS selector for the price, and get a sorted comparison table.',
       recommended: true,
+      hasExample: true,
       priceCompare: true,
       exampleUrls: [
         'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html',
@@ -40,7 +41,8 @@
     quotes: {
       description:
         'Extracts quote text, author names, and tags from quotes.toscrape.com. No URL needed — great first demo.',
-      example: null,
+      hasExample: true,
+      exampleMaxPages: 1,
       placeholder: '',
       recommended: true,
       summary: (n) => `Showing ${n} quote${n !== 1 ? 's' : ''} with text, author, and tags`,
@@ -50,6 +52,7 @@
     meta: {
       description:
         'Extracts page title, meta description, and H1–H3 headings from a single URL. One summary card, not a list of links.',
+      hasExample: true,
       example: 'https://quotes.toscrape.com',
       placeholder: 'https://quotes.toscrape.com',
       summary: () => 'Showing page metadata — title, description, and headings',
@@ -58,7 +61,9 @@
     links: {
       description:
         'Extracts hyperlinks (URLs + link text) found on a page. Results are a list of links — not article text, prices, or full page content.',
+      hasExample: true,
       example: 'https://quotes.toscrape.com',
+      exampleSameDomain: true,
       placeholder: 'https://quotes.toscrape.com',
       summary: (n) =>
         `Showing ${n} link${n !== 1 ? 's' : ''} extracted from the page (URL + link text only)`,
@@ -70,8 +75,9 @@
     tables: {
       description:
         'Extracts structured data from HTML tables — rows and columns as spreadsheet-style records.',
-      example: 'https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)',
-      placeholder: 'https://example.com/page-with-tables',
+      hasExample: true,
+      example: 'https://quotes.toscrape.com/tableful',
+      placeholder: 'https://quotes.toscrape.com/tableful',
       summary: (n) => `Showing ${n} table row${n !== 1 ? 's' : ''} extracted from HTML tables`,
       columns: { table: 'Table #' },
       emptyHint: 'No HTML tables found on this page. Try a URL that contains <table> elements.',
@@ -79,6 +85,7 @@
     selectors: {
       description:
         'Extracts content matching your CSS selectors — text and HTML snippets for each match.',
+      hasExample: true,
       example: 'https://quotes.toscrape.com',
       placeholder: 'https://quotes.toscrape.com',
       exampleSelectors: 'div.quote span.text\nsmall.author',
@@ -89,8 +96,10 @@
     sitemap: {
       description:
         'Crawls sitemap.xml (and sitemap indexes) to extract all page URLs. Great for site audits and bulk discovery.',
-      example: 'https://quotes.toscrape.com',
-      placeholder: 'https://example.com',
+      hasExample: true,
+      example: 'https://wordpress.org/sitemap.xml',
+      exampleMaxUrls: 50,
+      placeholder: 'https://example.com/sitemap.xml',
       sitemapMode: true,
       summary: (n) => `Found ${n} URL${n !== 1 ? 's' : ''} in sitemap`,
       columns: { url: 'URL', source_sitemap: 'Source Sitemap' },
@@ -100,7 +109,8 @@
     email_extract: {
       description:
         'Extracts email addresses from page text and mailto: links. Useful for outreach research and contact discovery.',
-      example: 'https://quotes.toscrape.com',
+      hasExample: true,
+      example: 'https://www.w3.org/People/Berners-Lee/',
       placeholder: 'https://example.com/contact',
       summary: (n) => `Found ${n} email address${n !== 1 ? 'es' : ''}`,
       columns: { email: 'Email', source: 'Source', context: 'Context' },
@@ -110,7 +120,8 @@
     json_ld: {
       description:
         'Extracts JSON-LD structured data (schema.org) — products, prices, ratings, and reviews.',
-      example: 'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html',
+      hasExample: true,
+      example: 'https://wordpress.org/',
       placeholder: 'https://example.com/product',
       summary: (n) => `Found ${n} JSON-LD schema block${n !== 1 ? 's' : ''}`,
       columns: { type: 'Type', name: 'Name', price: 'Price', price_currency: 'Currency', rating_value: 'Rating' },
@@ -120,6 +131,7 @@
     social_meta: {
       description:
         'Extracts Open Graph and Twitter Card metadata — og:title, og:image, twitter:card, and more.',
+      hasExample: true,
       example: 'https://quotes.toscrape.com',
       placeholder: 'https://example.com',
       cardMode: true,
@@ -130,6 +142,7 @@
     readability: {
       description:
         'Extracts clean main article text using readability heuristics — strips nav, ads, and boilerplate.',
+      hasExample: true,
       example: 'https://quotes.toscrape.com',
       placeholder: 'https://example.com/article',
       articleMode: true,
@@ -291,10 +304,12 @@
       $('#url').removeAttribute('required');
     } else {
       $('#url').setAttribute('required', '');
-      $('#url').placeholder = cfg.placeholder || 'https://example.com';
+      if (cfg.example) {
+        $('#url').placeholder = cfg.placeholder || 'https://example.com';
+      }
     }
 
-    if (cfg.example && !isPriceCompare) {
+    if (cfg.hasExample) {
       tryExampleBtn.classList.remove('hidden');
     } else {
       tryExampleBtn.classList.add('hidden');
@@ -315,25 +330,45 @@
   $('#mode').addEventListener('change', updateModeUI);
   updateModeUI();
 
-  $('#try-example-btn').addEventListener('click', () => {
-    const mode = $('#mode').value;
+  function loadExampleForMode(mode = $('#mode').value) {
     const cfg = MODE_CONFIG[mode];
-    if (cfg.example) {
-      $('#url').value = cfg.example;
-      toast('Example URL filled in', 'info');
-    }
-    if (cfg.exampleSelectors) {
-      $('#selectors').value = cfg.exampleSelectors;
-    }
-  });
+    if (!cfg?.hasExample) return;
 
-  $('#load-example-urls-btn').addEventListener('click', () => {
-    const cfg = MODE_CONFIG.price_compare;
-    $('#compare-urls').value = cfg.exampleUrls;
-    $('#price-selector').value = cfg.examplePriceSelector;
-    $('#product-label').value = cfg.exampleProductLabel;
-    toast('Example URLs loaded — click Compare Prices to try it', 'info');
-  });
+    if (mode === 'price_compare') {
+      $('#compare-urls').value = cfg.exampleUrls;
+      $('#price-selector').value = cfg.examplePriceSelector;
+      $('#product-label').value = cfg.exampleProductLabel;
+    } else {
+      if (cfg.example) {
+        $('#url').value = cfg.example;
+      } else {
+        $('#url').value = '';
+      }
+      if (cfg.exampleSelectors) {
+        $('#selectors').value = cfg.exampleSelectors;
+      }
+      if (cfg.exampleSameDomain != null) {
+        $('#same-domain').checked = cfg.exampleSameDomain;
+      }
+      if (cfg.exampleMaxUrls != null) {
+        $('#max-urls').value = cfg.exampleMaxUrls;
+      }
+      if (cfg.exampleMaxPages != null) {
+        $('#max-pages').value = cfg.exampleMaxPages;
+      }
+      if (cfg.exampleBatchUrls) {
+        $('#batch-meta-urls').value = cfg.exampleBatchUrls;
+      } else if (mode !== 'meta') {
+        $('#batch-meta-urls').value = '';
+      }
+    }
+
+    const submitLabel = cfg.submitLabel || 'Start Scraping';
+    toast(`Example loaded — click ${submitLabel}`, 'info');
+  }
+
+  $('#try-example-btn').addEventListener('click', () => loadExampleForMode());
+  $('#load-example-urls-btn').addEventListener('click', () => loadExampleForMode('price_compare'));
 
   function parseCsvText(text) {
     return text

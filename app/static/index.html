@@ -83,6 +83,7 @@
                   <option value="readability">📰 Readability — clean article text</option>
                 </select>
                 <p id="mode-description" class="mode-description"></p>
+                <button type="button" id="try-example-btn" class="btn btn-ghost btn-sm try-example-btn hidden">Try example</button>
               </div>
 
               <div id="price-compare-panel">
@@ -95,7 +96,7 @@
                   <label for="compare-urls">Step 1 — Paste product page URLs (one per line)</label>
                   <textarea id="compare-urls" rows="6" placeholder="https://store-a.com/product&#10;https://store-b.com/product"></textarea>
                   <div class="form-row-inline">
-                    <button type="button" id="load-example-urls-btn" class="btn btn-ghost btn-sm">Load example</button>
+                    <button type="button" id="load-example-urls-btn" class="btn btn-ghost btn-sm">Try example</button>
                     <label class="btn btn-ghost btn-sm csv-upload-btn">
                       Import CSV
                       <input type="file" id="csv-import" accept=".csv,text/csv" hidden>
@@ -126,7 +127,6 @@
                 <label for="url">Target URL</label>
                 <div class="url-row">
                   <input type="url" id="url" name="url" placeholder="https://example.com">
-                  <button type="button" id="try-example-btn" class="btn btn-ghost btn-sm try-example-btn hidden">Try example</button>
                 </div>
                 <p id="robots-hint" class="form-hint hidden">
                   Some sites block scraping via robots.txt. Use <strong>Quotes Demo</strong> or disable robots check in Settings.

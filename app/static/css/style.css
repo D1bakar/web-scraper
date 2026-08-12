@@ -815,7 +815,7 @@ tbody tr:nth-child(3) { animation-delay: 0.15s; }
 
 .url-row { display: flex; gap: 0.5rem; align-items: stretch; }
 .url-row input { flex: 1; }
-.try-example-btn { flex-shrink: 0; white-space: nowrap; }
+.try-example-btn { flex-shrink: 0; white-space: nowrap; margin-bottom: 0.75rem; }
 
 .results-summary {
   margin-bottom: 1rem;
