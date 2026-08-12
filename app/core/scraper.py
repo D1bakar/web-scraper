@@ -98,7 +98,7 @@ class AsyncWebScraper:
         self.timeout = timeout
         self.retries = retries
         self.user_agent = user_agent or (
-            "Mozilla/5.0 (compatible; WebScraperPro/2.3; "
+            "Mozilla/5.0 (compatible; WebScraperPro/2.3.1; "
             "+https://github.com/D1bakar/web-scraper)"
         )
         self.check_robots = check_robots

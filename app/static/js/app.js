@@ -256,6 +256,9 @@
       return;
     }
     btn?.addEventListener('click', dismissHero);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !overlay.classList.contains('hidden')) dismissHero();
+    });
   }
 
   function dismissHero() {
@@ -482,6 +485,10 @@
     const cfg = MODE_CONFIG[mode];
     if (!cfg?.hasExample) return;
 
+    // Demo URLs are scraper-friendly; disable robots.txt for one-click demos.
+    saveSettings({ ...loadSettings(), check_robots: false });
+    applySettingsToForm();
+
     if (mode === 'price_compare') {
       $('#compare-urls').value = cfg.exampleUrls;
       $('#price-selector').value = cfg.examplePriceSelector;
@@ -512,7 +519,7 @@
     }
 
     const submitLabel = cfg.submitLabel || 'Start Scraping';
-    toast(`Example loaded — click ${submitLabel}`, 'info');
+    toast(`Example loaded (robots.txt off for demo) — click ${submitLabel}`, 'info');
   }
 
   $('#try-example-btn').addEventListener('click', () => loadExampleForMode());

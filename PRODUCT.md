@@ -39,7 +39,7 @@ One deployable platform. One liquid-glass dashboard people screenshot and share.
 
 ## The Future
 
-We're building toward JavaScript rendering, scheduled jobs, and plugin modes — but v2.3.0 already delivers what most teams need today: **extract the web, instantly**.
+We're building toward JavaScript rendering, scheduled jobs, and plugin modes — but v2.3.1 already delivers what most teams need today: **extract the web, instantly**.
 
 ---
 

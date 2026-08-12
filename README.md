@@ -18,7 +18,7 @@
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License"></a>
   <a href="https://github.com/D1bakar/web-scraper/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/D1bakar/web-scraper/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI Status"></a>
-  <a href="https://github.com/D1bakar/web-scraper/releases"><img src="https://img.shields.io/badge/version-2.3.0-blue?style=for-the-badge" alt="v2.3.0"></a>
+  <a href="https://github.com/D1bakar/web-scraper/releases"><img src="https://img.shields.io/badge/version-2.3.1-blue?style=for-the-badge" alt="v2.3.1"></a>
   <a href="https://github.com/D1bakar/web-scraper/stargazers"><img src="https://img.shields.io/github/stars/D1bakar/web-scraper?style=for-the-badge&logo=github&label=Stars" alt="GitHub Stars"></a>
 </p>
 
@@ -39,7 +39,20 @@
 
 Deploy a **liquid glass dashboard**, **REST API**, **job queue**, and **11 extraction modes** in under 60 seconds. Track jobs in real time, export JSON/CSV/Excel, and sleep knowing SSRF protection, rate limits, and robots.txt compliance are built in.
 
-> **v2.3.0 — The Revolutionary Release:** viral-ready UI, screenshot-worthy dashboard, confetti on success, price compare bar charts, share buttons, and docs that hit different.
+> **v2.3.1 — Stability patch:** fixes rate limiting during job polling, stale-server startup issues, and Try example demo reliability.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| New modes (`sitemap`, `email_extract`, etc.) return **422 enum error** | An **old server** is still running. Stop it and restart: run `.\start.bat` (Windows) or `uvicorn app.main:app --reload`. Confirm **`/api/health` shows version 2.3.1**. |
+| Jobs fail with **ROBOTS_BLOCKED** | Click **Try example** (auto-disables robots for demos) or uncheck **Check robots.txt** in Settings. Use **Quotes Demo** for a guaranteed first run. |
+| **Rate limit exceeded** during rapid testing | Health checks and job polling are exempt in v2.3.1. Restart the server after upgrading. Default limit is **120 POST requests/min** (360 on localhost). |
+| Hero overlay won't dismiss | Click **Launch Dashboard**, press **Escape**, or clear `localStorage` key `wsp_hero_seen`. |
+| Port **8000 already in use** | `start.ps1` / `start.bat` now stops stale listeners automatically. Or run `netstat -ano \| findstr :8000` and stop the PID manually. |
+| Empty price compare results | Verify your CSS selector matches the price element. Use **Smart hints** or the demo selector `.price_color` on books.toscrape.com. |
 
 ---
 

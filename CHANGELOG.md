@@ -2,6 +2,22 @@
 
 All notable changes to Web Scraper Pro are documented here.
 
+## [2.3.1] — 2026-08-12 — Stability Patch
+
+### Fixed
+- **Rate limiting** no longer blocks job status polling, health probes, stats, or selector hints
+- **Localhost** gets a higher effective rate limit (3×) for dashboard demo usage
+- **Try example** now disables robots.txt for demo runs and shows a clear toast
+- **Hero overlay** dismisses with Escape key
+- **start.ps1 / start.bat** stops stale processes on port 8000 before launch (fixes old v2.1 server serving outdated API)
+- Default rate limit raised to **120/min**; `.env.example` user agent updated to 2.3.1
+
+### Added
+- `tests/test_try_example_modes.py` — validates all 11 Try example configs end-to-end
+- `tests/test_rate_limit.py` — rate limit exemption coverage
+- `scripts/test_all_modes.py` — manual API smoke test for all modes
+- README **Troubleshooting** section
+
 ## [2.3.0] — 2026-08-12 — The Revolutionary Release
 
 ### Added — Viral-Ready UI

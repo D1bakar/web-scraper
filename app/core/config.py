@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Web Scraper Pro"
-    app_version: str = "2.3.0"
+    app_version: str = "2.3.1"
     environment: str = "development"
     debug: bool = False
     host: str = "0.0.0.0"
@@ -27,11 +27,11 @@ class Settings(BaseSettings):
     default_timeout: int = 15
     default_retries: int = 3
     default_user_agent: str = (
-        "Mozilla/5.0 (compatible; WebScraperPro/2.3; "
+        "Mozilla/5.0 (compatible; WebScraperPro/2.3.1; "
         "+https://github.com/D1bakar/web-scraper)"
     )
     max_concurrent_jobs: int = 5
-    rate_limit_per_minute: int = 60
+    rate_limit_per_minute: int = 120
     check_robots_txt: bool = True
     allow_private_urls: bool = False
 

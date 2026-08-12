@@ -6,8 +6,8 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 Write-Host ""
-Write-Host "  Web Scraper Pro v2.1" -ForegroundColor Cyan
-Write-Host "  ====================" -ForegroundColor DarkGray
+Write-Host "  Web Scraper Pro v2.3.1" -ForegroundColor Cyan
+Write-Host "  ======================" -ForegroundColor DarkGray
 Write-Host ""
 
 # Verify Python is available
@@ -46,11 +46,31 @@ if (-not (Test-Path ".env")) {
 # Ensure data directory exists
 New-Item -ItemType Directory -Force -Path "data" | Out-Null
 
+# Free port 8000 if an old server is still running (prevents stale v2.1 instances)
+try {
+    $conn = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($conn) {
+        Write-Host "  Port 8000 in use — stopping PID $($conn.OwningProcess)..." -ForegroundColor Yellow
+        Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+    }
+} catch {
+    # Fallback when Get-NetTCPConnection is unavailable
+    $netstat = netstat -ano | Select-String ":8000\s+.*LISTENING\s+(\d+)" | Select-Object -First 1
+    if ($netstat -match "(\d+)\s*$") {
+        $oldPid = [int]$Matches[1]
+        Write-Host "  Port 8000 in use — stopping PID $oldPid..." -ForegroundColor Yellow
+        Stop-Process -Id $oldPid -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+    }
+}
+
 Write-Host ""
 Write-Host "  Dashboard:  http://127.0.0.1:8000" -ForegroundColor Green
 Write-Host "  API docs:   http://127.0.0.1:8000/api/docs" -ForegroundColor Green
-Write-Host "  Health:     http://127.0.0.1:8000/api/health/detail" -ForegroundColor Green
+Write-Host "  Health:     http://127.0.0.1:8000/api/health" -ForegroundColor Green
 Write-Host ""
+Write-Host "  Tip: verify version is 2.3.1 at /api/health before testing modes." -ForegroundColor DarkGray
 Write-Host "  Press Ctrl+C to stop the server." -ForegroundColor DarkGray
 Write-Host ""
 

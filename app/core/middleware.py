@@ -74,9 +74,16 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Simple in-memory sliding-window rate limiter per client IP."""
 
-    def __init__(self, app, requests_per_minute: int):
+    EXEMPT_PREFIXES = (
+        "/api/health",
+        "/api/settings",
+        "/api/stats",
+    )
+
+    def __init__(self, app, requests_per_minute: int, *, localhost_multiplier: int = 3):
         super().__init__(app)
         self.limit = max(requests_per_minute, 1)
+        self.localhost_multiplier = max(localhost_multiplier, 1)
         self.window = 60.0
         self._hits: dict[str, list[float]] = defaultdict(list)
 
@@ -88,16 +95,37 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return request.client.host
         return "unknown"
 
+    def _is_exempt(self, request: Request) -> bool:
+        path = request.url.path
+        if any(path.startswith(prefix) for prefix in self.EXEMPT_PREFIXES):
+            return True
+        if request.method == "GET" and path.startswith("/api/jobs"):
+            return True
+        if request.method == "GET" and path.startswith("/api/selector-hints"):
+            return True
+        if request.method == "GET" and path.startswith("/api/settings"):
+            return True
+        return False
+
+    def _effective_limit(self, ip: str) -> int:
+        if ip in ("127.0.0.1", "::1", "localhost"):
+            return self.limit * self.localhost_multiplier
+        return self.limit
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if not request.url.path.startswith("/api/"):
+            return await call_next(request)
+
+        if self._is_exempt(request):
             return await call_next(request)
 
         now = time.monotonic()
         ip = self._client_ip(request)
         window_start = now - self.window
+        limit = self._effective_limit(ip)
 
         hits = [t for t in self._hits[ip] if t > window_start]
-        if len(hits) >= self.limit:
+        if len(hits) >= limit:
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Rate limit exceeded. Try again later."},
