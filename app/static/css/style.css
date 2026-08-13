@@ -1,5 +1,5 @@
 /* ============================================================
-   Web Scraper Pro — UI v2.6
+   Web Scraper Pro — UI v2.6.1
    Design system + refined components
    ============================================================ */
 
@@ -2495,5 +2495,538 @@ body.motion-reduced .orb { filter: blur(100px); opacity: 0.5; }
 @media (min-width: 768px) {
   .nav-item {
     min-height: 40px;
+  }
+}
+
+/* ============================================================
+   v2.6.1 — Mobile Glassmorphism (320px–768px)
+   Premium frosted-glass surfaces, floating nav pill
+   ============================================================ */
+
+@media (max-width: 767px) {
+  /* Soft ambient mesh — not noisy */
+  .bg-mesh {
+    background:
+      radial-gradient(ellipse 90% 70% at 20% 10%, rgba(99, 102, 241, 0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 85% 90%, rgba(34, 211, 238, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 50% at 50% 45%, rgba(129, 140, 248, 0.06) 0%, transparent 45%),
+      var(--bg-primary);
+    animation: meshShift 28s ease-in-out infinite alternate;
+  }
+
+  .orb {
+    filter: blur(70px);
+    opacity: 0.65;
+  }
+
+  .orb-4 {
+    display: block;
+    width: 220px;
+    height: 220px;
+    background: rgba(99, 102, 241, 0.12);
+    bottom: 20%;
+    left: -10%;
+    animation-delay: -8s;
+  }
+
+  /* Layout — one column, generous padding, no overflow */
+  .main {
+    margin-left: 0;
+    padding: var(--mobile-content-padding);
+    padding-left: max(var(--mobile-content-padding), var(--safe-left));
+    padding-right: max(var(--mobile-content-padding), var(--safe-right));
+    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--mobile-nav-gap) + 28px);
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .workspace-grid,
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  .card {
+    padding: var(--card-padding);
+    min-width: 0;
+  }
+
+  /* Frosted glass cards */
+  .glass-panel,
+  .card.glass-panel {
+    background: linear-gradient(
+      165deg,
+      var(--mobile-glass-bg) 0%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    backdrop-filter: blur(var(--mobile-glass-blur)) saturate(185%);
+    -webkit-backdrop-filter: blur(var(--mobile-glass-blur)) saturate(185%);
+    border: 1px solid var(--mobile-glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  [data-theme="light"] .glass-panel,
+  [data-theme="light"] .card.glass-panel {
+    box-shadow:
+      0 8px 28px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  /* Section headers — compact, less clutter */
+  .page-header,
+  .section-header {
+    margin-bottom: var(--space-4);
+  }
+
+  .section-header-text p {
+    display: none;
+  }
+
+  .section-header-text h2,
+  .page-header h2 {
+    font-size: var(--text-xl);
+  }
+
+  .section-header-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  /* Readable typography */
+  body {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .form-hint,
+  .mode-description,
+  .settings-note,
+  .card-title {
+    font-size: 0.875rem;
+  }
+
+  .mode-card-label {
+    font-size: 0.8125rem;
+  }
+
+  .mode-card-desc {
+    font-size: 0.6875rem;
+  }
+
+  /* Glass form inputs — inset glow on focus */
+  .form-group input,
+  .form-group textarea,
+  .form-group select,
+  .input-hero,
+  .search-input,
+  .theme-switcher {
+    background: var(--mobile-input-bg);
+    border: 1px solid var(--mobile-glass-border);
+    font-size: 16px;
+    min-height: var(--touch-target);
+  }
+
+  .form-group input,
+  .form-group textarea,
+  .form-group select,
+  .input-hero,
+  .search-input {
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus,
+  .input-hero:focus,
+  .search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow:
+      inset 0 1px 8px var(--mobile-inset-glow),
+      inset 0 0 0 1px rgba(99, 102, 241, 0.2),
+      0 0 0 3px var(--accent-glow);
+  }
+
+  .input-hero.textarea-hero {
+    min-height: 120px;
+    font-size: 16px;
+  }
+
+  /* Mode cards — glass tiles */
+  .mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .mode-card {
+    background: var(--mobile-glass-bg);
+    backdrop-filter: blur(16px) saturate(170%);
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    border: 1px solid var(--mobile-glass-border);
+    border-radius: var(--radius);
+    padding: var(--space-4) var(--space-2);
+    min-height: 72px;
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .mode-card:active {
+    transform: scale(0.97);
+    background: var(--mobile-glass-bg-solid);
+  }
+
+  .mode-card.active {
+    border-color: var(--accent);
+    background: linear-gradient(160deg, rgba(99, 102, 241, 0.18), var(--mobile-glass-bg));
+    box-shadow:
+      0 0 24px var(--accent-glow),
+      inset 0 0 20px rgba(99, 102, 241, 0.1);
+    animation: none;
+  }
+
+  /* Touch targets — 48px minimum */
+  .btn,
+  .bottom-nav-item,
+  .mode-card,
+  .hint-chip,
+  .settings-tab,
+  .more-card,
+  .nav-item {
+    min-height: var(--touch-target);
+    min-width: var(--touch-target);
+  }
+
+  .btn-sm {
+    min-height: var(--touch-target);
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-lg {
+    min-height: 52px;
+    font-size: 1rem;
+    border-radius: var(--radius);
+  }
+
+  /* Results & history — stacked glass cards */
+  .table-wrap {
+    display: none;
+  }
+
+  .results-cards,
+  .history-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .result-card,
+  .history-card,
+  .job-card {
+    padding: var(--space-5);
+    background: var(--mobile-glass-bg);
+    backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+    border: 1px solid var(--mobile-glass-border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .result-card-row {
+    padding: 0.5rem 0;
+    gap: var(--space-3);
+  }
+
+  .result-card-label {
+    font-size: 0.8125rem;
+    flex: 0 0 38%;
+  }
+
+  .result-card-value {
+    font-size: 0.875rem;
+    text-align: right;
+  }
+
+  .history-card-actions,
+  .job-card-actions {
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .history-card-actions .btn,
+  .job-card-actions .btn {
+    flex: 1;
+  }
+
+  /* Results header — stacked, not cramped */
+  .results-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+
+  .results-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .export-btns,
+  .share-btns {
+    width: 100%;
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .export-btns .btn,
+  .share-btns .btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .url-row,
+  .form-row-inline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Floating glass pill bottom nav */
+  .bottom-nav {
+    position: fixed !important;
+    bottom: calc(var(--safe-bottom) + var(--mobile-nav-gap));
+    left: max(16px, var(--safe-left));
+    right: max(16px, var(--safe-right));
+    width: auto;
+    height: var(--bottom-nav-height);
+    padding: 0 8px;
+    padding-bottom: 0;
+    margin: 0 auto;
+    background: var(--mobile-nav-bg);
+    backdrop-filter: blur(var(--mobile-nav-blur)) saturate(190%);
+    -webkit-backdrop-filter: blur(var(--mobile-nav-blur)) saturate(190%);
+    border: 1px solid var(--mobile-glass-border);
+    border-radius: var(--radius-full);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.32),
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    z-index: 200;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .bottom-nav-indicator {
+    top: 6px;
+    left: 8px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: var(--accent) !important;
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    min-height: var(--touch-target);
+    min-width: 0;
+    padding: 0.25rem 0.15rem;
+    gap: 0.2rem;
+    border-radius: var(--radius-full);
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .bottom-nav-item:active {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .bottom-nav-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bottom-nav-icon {
+    font-size: 1.2rem;
+  }
+
+  /* Mobile dashboard stat cards */
+  .mobile-dashboard {
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .mobile-stat-card {
+    padding: var(--space-4);
+    background: var(--mobile-glass-bg);
+    backdrop-filter: blur(20px) saturate(175%);
+    -webkit-backdrop-filter: blur(20px) saturate(175%);
+    border: 1px solid var(--mobile-glass-border);
+    border-radius: var(--radius);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .mobile-stat-value {
+    font-size: 1.35rem;
+  }
+
+  .mobile-stat-label {
+    font-size: 0.8125rem;
+  }
+
+  /* Settings & manage lists — glass items */
+  .settings-tab,
+  .manage-item,
+  .more-card {
+    background: var(--mobile-glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--mobile-glass-border);
+  }
+
+  .advanced-panel {
+    background: var(--mobile-glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--mobile-glass-border);
+  }
+
+  .bottom-sheet-panel {
+    backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+  }
+
+  /* Hero overlay — dismissible, compact on mobile */
+  .hero-overlay {
+    padding: var(--mobile-content-padding);
+    padding-top: max(var(--mobile-content-padding), env(safe-area-inset-top, 0px));
+    background: rgba(5, 5, 8, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .hero-skip {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top, 16px));
+    right: max(16px, env(safe-area-inset-right, 16px));
+    z-index: 2;
+    min-height: var(--touch-target);
+    backdrop-filter: blur(12px);
+    background: var(--mobile-glass-bg);
+    border: 1px solid var(--mobile-glass-border);
+  }
+
+  .hero-content {
+    padding: var(--space-8) var(--space-5);
+    margin: 0;
+    max-width: 100%;
+    width: 100%;
+    backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+    background: var(--mobile-glass-bg);
+    border: 1px solid var(--mobile-glass-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .hero-title {
+    font-size: 1.65rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.875rem;
+    margin-bottom: var(--space-6);
+  }
+
+  .hero-footnote {
+    display: none;
+  }
+
+  .hero-cta {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  /* Toast & PWA above floating nav */
+  #toast-container {
+    bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--mobile-nav-gap) + 16px);
+    left: var(--mobile-content-padding);
+    right: var(--mobile-content-padding);
+  }
+
+  .toast {
+    max-width: none;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .pwa-install-banner {
+    bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--mobile-nav-gap) + 8px);
+    left: max(16px, var(--safe-left));
+    right: max(16px, var(--safe-right));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: var(--mobile-glass-bg);
+    border: 1px solid var(--mobile-glass-border);
+    border-radius: var(--radius);
+    padding: var(--space-4);
+  }
+
+  /* Prevent horizontal overflow at 320px */
+  .results-meta,
+  .meta-card-item,
+  .price-chart,
+  .raw-json-content,
+  .scrape-flow,
+  .live-workspace {
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mode-grid,
+  .more-grid,
+  .health-grid {
+    min-width: 0;
+  }
+
+  .keyboard-hint {
+    display: none;
+  }
+
+  .live-workspace .card-title {
+    margin-bottom: var(--space-3);
+  }
+
+  .status-placeholder {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+@media (max-width: 320px) {
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-nav-label {
+    font-size: 0.5625rem;
+  }
+
+  .main {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 }

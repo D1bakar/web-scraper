@@ -1,5 +1,5 @@
 /* Web Scraper Pro — static asset cache only (no sensitive data) */
-const CACHE = 'wsp-static-v2.6.1';
+const CACHE = 'wsp-static-v2.6.2';
 const ASSETS = [
   '/',
   '/static/css/style.css',

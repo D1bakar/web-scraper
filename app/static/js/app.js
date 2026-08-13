@@ -338,6 +338,7 @@
     });
     updateBottomNavIndicator(view);
     updateNavIndicator(view);
+    updateMobileDashboardVisibility(view);
     if (view === 'history') loadHistory();
     if (view === 'health' || view === 'more') loadHealthDashboard();
     if (view === 'jobs') loadJobsDashboard();
@@ -434,6 +435,7 @@
   function initHero() {
     const overlay = $('#hero-overlay');
     const btn = $('#hero-enter-btn');
+    const skipBtn = $('#hero-skip-btn');
     if (!overlay) return;
     if (localStorage.getItem(HERO_KEY)) {
       overlay.classList.add('hidden');
@@ -441,6 +443,11 @@
       return;
     }
     btn?.addEventListener('click', dismissHero);
+    skipBtn?.addEventListener('click', dismissHero);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.classList.contains('hero-particles')) dismissHero();
+    });
+    overlay.querySelector('.hero-content')?.addEventListener('click', (e) => e.stopPropagation());
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !overlay.classList.contains('hidden')) dismissHero();
     });
@@ -1618,10 +1625,18 @@
     }
   }
 
+  function updateMobileDashboardVisibility(view) {
+    const el = $('#mobile-dashboard');
+    if (!el || !isMobile()) return;
+    const activeView = view || $('.bottom-nav-item.active')?.dataset.view || 'scrape';
+    el.classList.toggle('hidden', activeView !== 'scrape' || el.dataset.loaded !== '1');
+  }
+
   async function loadMobileDashboard() {
     const el = $('#mobile-dashboard');
     if (!el || !isMobile()) { el?.classList.add('hidden'); return; }
-    el.classList.remove('hidden');
+    el.dataset.loaded = '1';
+    updateMobileDashboardVisibility('scrape');
     try {
       const res = await apiFetch(`${API}/dashboard/summary?mobile=true`);
       const data = await res.json();
@@ -1632,7 +1647,8 @@
         <div class="mobile-stat-card"><div class="mobile-stat-value">${data.success_rate}%</div><div class="mobile-stat-label">Success</div></div>
       `;
       window.navigateToView = navigateToView;
-    } catch { el.classList.add('hidden'); }
+      updateMobileDashboardVisibility();
+    } catch { el.classList.add('hidden'); el.dataset.loaded = '0'; }
   }
 
   function truncate(str, len) {

@@ -2,6 +2,25 @@
 
 All notable changes to Web Scraper Pro are documented here.
 
+## [2.6.1] — 2026-08-13 — Mobile Glassmorphism
+
+### Changed — Mobile UI (320px–768px)
+- **Frosted glass surfaces** — backdrop-filter blur 20–24px on cards, inputs, mode tiles, results, history, and job lists
+- **Floating glass pill bottom nav** — frosted pill bar with safe-area insets instead of full-width solid bar
+- **Glass form inputs** — semi-transparent fields with inset glow on focus; 16px font prevents iOS zoom
+- **Ambient gradient mesh** — softer orbs and mesh background tuned for small screens
+- **One-column layout** — scrape workspace, results actions, and form rows stack cleanly
+- **Reduced clutter** — section subtitles hidden on mobile; hero footnote hidden; stats dashboard only on Scrape view
+- **48px touch targets** — buttons, nav items, mode cards, and chips meet accessibility minimum
+- **Hero overlay** — Skip button, tap-outside-to-dismiss, compact glass card layout
+- **Light + dark glass** — theme-aware mobile glass tokens for both appearance modes
+
+### Fixed
+- Bottom nav `position: relative` override breaking fixed positioning on mobile
+- Horizontal overflow risks at 320px on results, forms, and action rows
+- Toast and PWA banner positioning above floating nav pill
+- PWA cache bumped to v2.6.2
+
 ## [2.6.0] — 2026-08-13 — God-tier UX Redesign
 
 ### Added — Design System & Themes
