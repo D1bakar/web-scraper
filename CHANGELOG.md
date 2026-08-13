@@ -2,6 +2,30 @@
 
 All notable changes to Web Scraper Pro are documented here.
 
+## [2.6.0] — 2026-08-13 — God-tier UX Redesign
+
+### Added — Design System & Themes
+- **`design-tokens.css`** — semantic tokens for spacing, typography, colors, components
+- **Theme switcher** — Dark / Light / System with `localStorage` persistence
+- **Reduce motion toggle** — overrides animations beyond `prefers-reduced-motion`
+- **Sidebar nav indicator** — animated active pill on desktop
+- **Progressive disclosure** — advanced settings collapsed by default (selectors, max pages, domain)
+- **Empty states** with "Start a scrape →" CTAs on History and Jobs views
+- **Status dots** on job history (running/completed/failed)
+- **System version** in Settings from `/api/health/detail`
+- **`docs/UI_REDESIGN_PLAN.md`** — audit and implementation notes
+
+### Changed — UI/UX
+- **Scrape flow** reordered: URL hero → mode cards → advanced → "Start Scrape →" CTA
+- **Restrained aesthetics** — solid indigo accent, no rainbow gradients (Linear/Vercel bar)
+- **Subtle blob background** — 3 orbs, slower motion, hidden on reduced motion
+- **Light theme** — full surface hierarchy, contrast-safe inputs and glass panels
+- **Error display** — friendly message + expandable technical details
+- **Live workspace** — responsive grid layout for form + status panels
+
+### Fixed
+- PWA cache bumped to v2.6.0 (includes design-tokens.css)
+
 ## [2.5.0] — 2026-08-12 — Premium Fluid UI
 
 ### Added — Design System

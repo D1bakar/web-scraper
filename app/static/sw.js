@@ -1,8 +1,9 @@
 /* Web Scraper Pro — static asset cache only (no sensitive data) */
-const CACHE = 'wsp-static-v2.4.1';
+const CACHE = 'wsp-static-v2.6.0';
 const ASSETS = [
   '/',
   '/static/css/style.css',
+  '/static/css/design-tokens.css',
   '/static/js/app.js',
   '/static/manifest.json',
   '/static/img/logo.svg',

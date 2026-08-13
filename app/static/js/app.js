@@ -158,6 +158,8 @@
   const HERO_KEY = 'wsp_hero_seen';
   const DRAFT_KEY = 'wsp_form_draft';
   const PWA_DISMISS_KEY = 'wsp_pwa_dismiss';
+  const THEME_KEY = 'wsp_theme';
+  const MOTION_KEY = 'wsp_reduce_motion';
   const REPO_URL = 'https://github.com/D1bakar/web-scraper';
 
   let jobStartTime = null;
@@ -217,7 +219,72 @@
   }
 
   function prefersReducedMotion() {
+    if (localStorage.getItem(MOTION_KEY) === '1') return true;
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function applyMotionPreference() {
+    document.body.classList.toggle('motion-reduced', prefersReducedMotion());
+  }
+
+  function resolveTheme(preference) {
+    if (preference === 'system') {
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    return preference === 'light' ? 'light' : 'dark';
+  }
+
+  function applyTheme(preference) {
+    const pref = preference || localStorage.getItem(THEME_KEY) || 'dark';
+    const resolved = resolveTheme(pref);
+    document.documentElement.setAttribute('data-theme', pref === 'system' ? 'system' : resolved);
+    const meta = $('#meta-theme-color');
+    if (meta) {
+      meta.content = resolved === 'light' ? '#4f46e5' : '#6366f1';
+    }
+    $$('.theme-option').forEach((btn) => {
+      const active = btn.dataset.themeChoice === pref;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function initTheme() {
+    applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+    $$('.theme-option').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        localStorage.setItem(THEME_KEY, btn.dataset.themeChoice);
+        applyTheme(btn.dataset.themeChoice);
+      });
+    });
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if ((localStorage.getItem(THEME_KEY) || 'dark') === 'system') applyTheme('system');
+    });
+    $('#setting-reduced-motion')?.addEventListener('change', (e) => {
+      localStorage.setItem(MOTION_KEY, e.target.checked ? '1' : '0');
+      applyMotionPreference();
+    });
+    const motionPref = localStorage.getItem(MOTION_KEY) === '1';
+    const motionEl = $('#setting-reduced-motion');
+    if (motionEl) motionEl.checked = motionPref;
+    applyMotionPreference();
+  }
+
+  initTheme();
+
+  function updateNavIndicator(view) {
+    const indicator = $('#nav-indicator');
+    const nav = $('.nav');
+    if (!indicator || !nav) return;
+    const items = [...nav.querySelectorAll('.nav-item')];
+    const idx = items.findIndex((b) => b.dataset.view === view);
+    if (idx < 0) return;
+    const item = items[idx];
+    indicator.style.transform = `translateY(${item.offsetTop}px)`;
+    indicator.style.height = `${item.offsetHeight}px`;
+    indicator.classList.add('visible');
+    items.forEach((b) => b.removeAttribute('aria-current'));
+    item.setAttribute('aria-current', 'page');
   }
 
   function initPageLoad() {
@@ -270,6 +337,7 @@
       }
     });
     updateBottomNavIndicator(view);
+    updateNavIndicator(view);
     if (view === 'history') loadHistory();
     if (view === 'health' || view === 'more') loadHealthDashboard();
     if (view === 'jobs') loadJobsDashboard();
@@ -516,6 +584,8 @@
     toast('An unexpected error occurred. Please try again.', 'error');
   });
 
+  window.navigateToView = navigateToView;
+
   // --- Navigation with transitions ---
   $$('.nav-item, .bottom-nav-item').forEach((btn) => {
     btn.addEventListener('click', () => navigateToView(btn.dataset.view));
@@ -543,10 +613,16 @@
 
     const isPriceCompare = mode === 'price_compare';
     const isBatchMeta = mode === 'meta';
+    const isQuotes = mode === 'quotes';
+    const quotesHero = $('#quotes-hero');
+    const scrapeHero = $('#scrape-hero');
+
     priceComparePanel.classList.toggle('hidden', !isPriceCompare);
     batchMetaGroup.classList.toggle('hidden', !isBatchMeta);
     maxUrlsGroup.classList.toggle('hidden', mode !== 'sitemap');
-    urlGroup.classList.toggle('hidden', mode === 'quotes' || isPriceCompare);
+    urlGroup.classList.toggle('hidden', isQuotes || isPriceCompare);
+    quotesHero?.classList.toggle('hidden', !isQuotes);
+    scrapeHero?.classList.toggle('hidden', isPriceCompare);
     selectorsGroup.classList.toggle('hidden', mode !== 'selectors');
     pagesGroup.classList.toggle('hidden', mode !== 'quotes');
     domainGroup.classList.toggle('hidden', mode !== 'links');
@@ -581,7 +657,7 @@
     }
     modeDesc.innerHTML = descHtml;
 
-    submitText.textContent = cfg.submitLabel || 'Start Scraping';
+    submitText.textContent = (cfg.submitLabel || 'Start Scrape') + ' →';
   }
 
   $('#mode').addEventListener('change', () => {
@@ -998,7 +1074,7 @@
             ${elapsed ? `<p class="elapsed-time">${elapsed}</p>` : ''}
           </div>
         </details>
-        ${job.error ? `<details class="job-detail-section"><summary>Error</summary><div class="section-body"><span class="status-value status-failed">${escapeHtml(formatJobError(job.error))}</span></div></details>` : ''}
+        ${job.error ? `<details class="job-detail-section"><summary>Error</summary><div class="section-body"><p class="error-friendly">${escapeHtml(formatJobError(job.error))}</p><pre class="error-technical">${escapeHtml(job.error)}</pre></div></details>` : ''}
         ${job.error && job.error.includes('ROBOTS_BLOCKED') ? `<div class="robots-help">Tip: Open <strong>Settings</strong> and uncheck "Check robots.txt", or use <strong>Quotes Demo</strong> mode.</div>` : ''}
         ${job.status === 'failed' ? `<button class="btn btn-retry btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.__retryJob('${job.id}')">↻ Retry Job</button>` : ''}
         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
@@ -1433,8 +1509,15 @@
       const data = await res.json();
 
       if (!data.jobs.length) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No jobs yet</td></tr>';
-        if (cardsEl) cardsEl.innerHTML = '<p style="text-align:center;color:var(--text-muted)">No jobs yet</p>';
+        const emptyHtml = `
+          <div class="empty-state">
+            <div class="empty-state-icon" aria-hidden="true">📋</div>
+            <p><strong>No jobs yet</strong></p>
+            <p>Your scrape history will appear here after your first run.</p>
+            <button type="button" class="btn btn-primary btn-sm" onclick="navigateToView('scrape')">Start a scrape →</button>
+          </div>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7">${emptyHtml}</td></tr>`;
+        if (cardsEl) cardsEl.innerHTML = emptyHtml;
         return;
       }
 
@@ -1449,13 +1532,23 @@
     }
   }
 
+  function statusDotHtml(status) {
+    const cls = {
+      running: 'status-dot-running',
+      pending: 'status-dot-pending',
+      completed: 'status-dot-completed',
+      failed: 'status-dot-failed',
+    }[status] || 'status-dot-pending';
+    return `<span class="status-dot ${cls}" aria-hidden="true"></span>`;
+  }
+
   function historyRowHtml(job) {
     return `
       <tr>
         <td class="job-id">${job.id.slice(0, 8)}...</td>
         <td>${job.mode}</td>
         <td title="${escapeHtml(job.url || '—')}">${truncate(job.url || '—', 40)}</td>
-        <td><span class="badge badge-${job.status === 'completed' ? 'healthy' : job.status === 'failed' ? 'error' : 'pending'}">${job.status}</span></td>
+        <td><span class="history-status-cell">${statusDotHtml(job.status)}${job.status}</span></td>
         <td>${job.total_items}</td>
         <td>${formatDate(job.created_at)}</td>
         <td><div class="history-actions">${historyActionsHtml(job)}</div></td>
@@ -1499,7 +1592,13 @@
       const data = await res.json();
       const jobs = data.recent_jobs || [];
       if (!jobs.length) {
-        el.innerHTML = '<p style="color:var(--text-muted);text-align:center">No jobs yet — start a scrape!</p>';
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon" aria-hidden="true">📡</div>
+            <p><strong>No jobs yet</strong></p>
+            <p>Active and recent scrape jobs will show here.</p>
+            <button type="button" class="btn btn-primary btn-sm" onclick="navigateToView('scrape')">Start a scrape →</button>
+          </div>`;
         return;
       }
       el.innerHTML = jobs.map((job, i) => `
@@ -1769,6 +1868,18 @@
     toast('Settings saved', 'success');
   });
 
+  async function loadSystemVersion() {
+    const el = $('#system-version');
+    if (!el) return;
+    try {
+      const res = await fetch(`${API}/health/detail`, { headers: apiHeaders() });
+      const data = await res.json();
+      el.textContent = `Web Scraper Pro v${data.version}`;
+    } catch {
+      el.textContent = 'Web Scraper Pro — version unavailable';
+    }
+  }
+
   // --- Init ---
   async function init() {
     try {
@@ -1778,12 +1889,18 @@
       initHero();
       initPageLoad();
       updateBottomNavIndicator('scrape');
+      updateNavIndicator('scrape');
       applySettingsToForm();
       restoreFormDraft();
       checkHealth();
+      loadSystemVersion();
       setInterval(checkHealth, 30000);
       loadMobileDashboard();
-      window.addEventListener('resize', loadMobileDashboard);
+      window.addEventListener('resize', () => {
+        loadMobileDashboard();
+        const active = $('.nav-item.active')?.dataset.view;
+        if (active) updateNavIndicator(active);
+      });
 
       try {
         const res = await apiFetch(`${API}/settings`);
