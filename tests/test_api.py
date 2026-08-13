@@ -65,3 +65,19 @@ def test_meta_requires_url(client):
 def test_serve_dashboard(client):
     response = client.get("/")
     assert response.status_code == 200
+    assert "Web Scraper Pro" in response.text
+
+
+def test_static_ui_assets(client):
+    """v2.6 UI redesign assets must be served (design-tokens.css imported by style.css)."""
+    for path in (
+        "/static/css/style.css",
+        "/static/css/design-tokens.css",
+        "/static/js/app.js",
+        "/static/manifest.json",
+        "/sw.js",
+    ):
+        response = client.get(path)
+        assert response.status_code == 200, path
+    assert "--font:" in client.get("/static/css/design-tokens.css").text
+    assert "design-tokens.css" in client.get("/static/css/style.css").text

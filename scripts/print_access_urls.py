@@ -87,12 +87,21 @@ def _print_banner(title: str) -> None:
 
 
 def main() -> int:
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
+    # Robust port parsing: first non-flag positional arg (avoids PowerShell splat quirks)
+    port = DEFAULT_PORT
+    for arg in sys.argv[1:]:
+        if arg.startswith("-"):
+            continue
+        try:
+            port = int(arg)
+            break
+        except ValueError:
+            continue
     show_qr = "--qr" in sys.argv
 
-    print(f"  Dashboard (this PC):  http://127.0.0.1:{port}")
-    print(f"  API docs (this PC):   http://127.0.0.1:{port}/api/docs")
-    print(f"  Health (this PC):     http://127.0.0.1:{port}/api/health")
+    print(f"  Dashboard (this PC):  http://127.0.0.1:{port}", flush=True)
+    print(f"  API docs (this PC):   http://127.0.0.1:{port}/api/docs", flush=True)
+    print(f"  Health (this PC):     http://127.0.0.1:{port}/api/health", flush=True)
 
     lan_ips = _lan_ipv4_addresses()
     scenario = _guess_scenario(lan_ips)

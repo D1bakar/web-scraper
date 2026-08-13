@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 Write-Host ""
-Write-Host "  Web Scraper Pro v2.5.0" -ForegroundColor Cyan
+Write-Host "  Web Scraper Pro v2.6.0" -ForegroundColor Cyan
 Write-Host "  ======================" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -31,8 +31,8 @@ $py = ".\.venv\Scripts\python.exe"
 
 # Install / upgrade dependencies
 Write-Host "  Installing dependencies..." -ForegroundColor Yellow
-& $py -m pip install -q --upgrade pip 2>$null
-& $py -m pip install -q -r requirements.txt
+& $py -m pip install -q --progress-bar off --upgrade pip 2>$null
+& $py -m pip install -q --progress-bar off -r requirements.txt
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ERROR: Failed to install dependencies." -ForegroundColor Red
     exit 1
@@ -67,15 +67,18 @@ try {
 }
 
 $phoneSetup = $args -contains "--phone-setup"
-$urlArgs = if ($phoneSetup) { @("8000", "--qr") } else { @("8000") }
 
 Write-Host ""
-& $py scripts/print_access_urls.py @urlArgs
+if ($phoneSetup) {
+    & $py scripts/print_access_urls.py 8000 --qr
+} else {
+    & $py scripts/print_access_urls.py 8000
+}
 Write-Host ""
 if ($phoneSetup) {
     Write-Host "  Still cannot connect? Double-click start-tunnel.bat for a public HTTPS URL." -ForegroundColor Yellow
 }
-Write-Host "  Tip: verify version is 2.5.0 at /api/health before testing modes." -ForegroundColor DarkGray
+Write-Host "  Tip: verify version is 2.6.0 at /api/health before testing modes." -ForegroundColor DarkGray
 Write-Host "  Press Ctrl+C to stop the server." -ForegroundColor DarkGray
 Write-Host ""
 

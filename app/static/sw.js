@@ -1,5 +1,5 @@
 /* Web Scraper Pro — static asset cache only (no sensitive data) */
-const CACHE = 'wsp-static-v2.6.0';
+const CACHE = 'wsp-static-v2.6.1';
 const ASSETS = [
   '/',
   '/static/css/style.css',
@@ -13,7 +13,15 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) =>
+      Promise.all(
+        ASSETS.map((url) =>
+          cache.add(url).catch(() => {
+            /* skip missing assets — never block SW install */
+          })
+        )
+      )
+    ).then(() => self.skipWaiting())
   );
 });
 
